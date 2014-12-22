@@ -212,5 +212,4 @@ return array(
             'Jobs/Form/UniqueApplyId' => 'Jobs\Form\Validator\UniqueApplyIdFactory',
         ),
     ),
-
 );
