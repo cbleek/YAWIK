@@ -17,7 +17,7 @@ use CoreTestUtils\TestCase\TestSetterGetterTrait;
 use Jobs\Entity\Category;
 use Jobs\Form\ClassificationsFieldset;
 use Zend\Form\Fieldset;
-use Zend\Form\FormElementManager\FormElementManagerV2Polyfill;
+use Zend\Form\FormElementManager\FormElementManagerV3Polyfill;
 use Zend\Hydrator\Strategy\DefaultStrategy;
 use Zend\ServiceManager\AbstractPluginManager;
 
@@ -51,9 +51,16 @@ class ClassificationsFieldsetTest extends \PHPUnit_Framework_TestCase
         $select = new Select();
         $strategy = new DefaultStrategy();
         $select->setHydratorStrategy($strategy);
-        $formElements = $this->getMockBuilder(FormElementManagerV2Polyfill::class)->disableOriginalConstructor()->setMethods(['get'])->getMock();
-        $formElements->expects($this->exactly(2))->method('get')
-                ->withConsecutive(
+        $formElements = $this
+	        ->getMockBuilder(FormElementManagerV3Polyfill::class)
+	        ->disableOriginalConstructor()
+	        ->setMethods(['get'])
+	        ->getMock()
+        ;
+        $formElements
+	        ->expects($this->exactly(3))
+	        ->method('get')
+	        ->withConsecutive(
                     [
                         'Core/Tree/Select',
                         [
@@ -64,7 +71,27 @@ class ClassificationsFieldsetTest extends \PHPUnit_Framework_TestCase
                             'allow_select_nodes' => true,
                             'name' => 'professions',
                             'options' => [
-                                'label' => /*@translate*/ 'Professions',
+                                'description' =>  'Select the professions of the job opening. This allows an applicant to find job openings by a certain profession.',
+                                'label' =>  'Professions',
+                            ],
+                            'attributes' => [
+                                'data-width' => '100%',
+                                'multiple' => true,
+                            ],
+                        ]
+                    ],
+                    [
+                        'Core/Tree/Select',
+                        [
+                            'tree' => [
+                                'entity' => Category::class,
+                                'value' => 'industries',
+                            ],
+                            'allow_select_nodes' => true,
+                            'name' => 'industries',
+                            'options' => [
+                                'description' => 'Select the industry of the hiring organization. This allows an applicant to search for job opening by industry.',
+                                'label' =>  'Industries',
                             ],
                             'attributes' => [
                                 'data-width' => '100%',
@@ -81,24 +108,28 @@ class ClassificationsFieldsetTest extends \PHPUnit_Framework_TestCase
                             ],
                             'name' => 'employmentTypes',
                             'options' => [
-                                'label' => /*@translate*/ 'Employment Types',
+                                'label' =>  'Employment Types',
+                                'description' => 'Manage the employment types you want to assign to jobs.',
                             ],
                             'attributes' => [
                                 'data-width' => '100%',
-                                //'multiple' => true,
+                                'multiple' => true,
                             ]
                         ]
                     ]
-            )->willReturn($select);
-        $this->target->expects($this->exactly(2))->method('add')->with($select);
+            )
+	        ->willReturn($select)
+        ;
+        $this->target->expects($this->exactly(3))->method('add')->with($select);
 
         $this->target->getFormFactory()->setFormElementManager($formElements);
 
         $hydrator = $this->getMockBuilder(EntityHydrator::class)->disableOriginalConstructor()
             ->setMethods(['addStrategy'])->getMock();
-        $hydrator->expects($this->exactly(2))->method('addStrategy')->withConsecutive(
+        $hydrator->expects($this->exactly(3))->method('addStrategy')->withConsecutive(
             ['professions', $strategy],
-            ['employmentTypes', $strategy]
+            ['employmentTypes', $strategy],
+            ['industries', $strategy]
         );
 
         $this->target->setHydrator($hydrator);

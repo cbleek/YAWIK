@@ -62,4 +62,18 @@ class MailServiceOptionsTest extends \PHPUnit_Framework_TestCase
         $this->options->setSsl("tls");
         $this->assertEquals("tls", $this->options->getSsl());
     }
+
+    /**
+     * @covers Core\Options\MailServiceOptions::getTransportClass
+     * @covers Core\Options\MailServiceOptions::setTransportClass
+     *
+     * We use "sendmail" as default, because authentication has to be enabled when
+     * using "smtp".
+     */
+    public function testSetGetTransportClass()
+    {
+        $this->assertEquals("sendmail", $this->options->getTransportClass());
+        $this->options->setTransportClass("smtp");
+        $this->assertEquals("smtp", $this->options->getTransportClass());
+    }
 }

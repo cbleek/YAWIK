@@ -33,7 +33,7 @@ class Education extends AbstractIdentifiableEntity
 
     /**
      * @var bool
-     * @ODM\Boolean
+     * @ODM\Field(type="boolean")
      */
     protected $currentIndicator;
 
@@ -129,7 +129,7 @@ class Education extends AbstractIdentifiableEntity
     }
     
     /**
-     * @return the $organizationName
+     * @return $organizationName
      */
     public function getOrganizationName()
     {

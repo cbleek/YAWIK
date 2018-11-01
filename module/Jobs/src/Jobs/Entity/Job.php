@@ -79,7 +79,7 @@ class Job extends BaseEntity implements JobInterface,
      * publishing company
      *
      * @var OrganizationInterface
-     * @ODM\ReferenceOne (targetDocument="\Organizations\Entity\Organization", simple=true, inversedBy="jobs")
+     * @ODM\ReferenceOne (targetDocument="\Organizations\Entity\Organization", storeAs="id", inversedBy="jobs")
      * @ODM\Index
      */
     protected $organization;
@@ -97,7 +97,7 @@ class Job extends BaseEntity implements JobInterface,
      * the owner of a Job Posting
      *
      * @var UserInterface $user
-     * @ODM\ReferenceOne(targetDocument="\Auth\Entity\User", simple=true)
+     * @ODM\ReferenceOne(targetDocument="\Auth\Entity\User", storeAs="id")
      * @ODM\Index
      */
     protected $user;
@@ -106,7 +106,7 @@ class Job extends BaseEntity implements JobInterface,
      * all applications of a certain jobad
      *
      * @var Collection
-     * @ODM\ReferenceMany(targetDocument="Applications\Entity\Application", simple=true, mappedBy="job",
+     * @ODM\ReferenceMany(targetDocument="Applications\Entity\Application", storeAs="id", mappedBy="job",
      *                    repositoryMethod="loadApplicationsForJob")
      */
     protected $applications;
@@ -191,7 +191,7 @@ class Job extends BaseEntity implements JobInterface,
      * Flag, privacy policy is accepted or not.
      *
      * @var bool
-     * @ODM\Boolean
+     * @ODM\Field(type="boolean")
      */
     protected $termsAccepted;
     
@@ -256,7 +256,7 @@ class Job extends BaseEntity implements JobInterface,
      *
      * @var Boolean
      *
-     * @ODM\Boolean
+     * @ODM\Field(type="boolean")
      */
     protected $atsEnabled;
     
@@ -281,14 +281,15 @@ class Job extends BaseEntity implements JobInterface,
      * Can contain various Portals
      *
      * @var array
-     * @ODM\Collection*/
+     * @ODM\Field(type="collection")
+     */
     protected $portals = array();
 
     /**
      * Flag indicating draft state of this job.
      *
      * @var bool
-     * @ODM\Boolean
+     * @ODM\Field(type="boolean")
      */
     protected $isDraft = false;
 
@@ -313,6 +314,37 @@ class Job extends BaseEntity implements JobInterface,
      * @since 0.29
      */
     protected $isDeleted = false;
+
+    /**
+     *
+     * @ODM\ReferenceMany(targetDocument="\Jobs\Entity\JobSnapshot", mappedBy="snapshotEntity", sort={"snapshotMeta.dateCreated"="desc"})
+     * @var JobSnapshot
+     */
+    protected $snapshots;
+
+    /**
+     * @ODM\ReferenceOne(targetDocument="\Jobs\Entity\JobSnapshot", mappedBy="snapshotEntity", sort={"snapshotMeta.dateCreated"="desc"})
+     *
+     * @var JobSnapshot
+     */
+    protected $latestSnapshot;
+
+
+    public function getSnapshots()
+    {
+        return $this->snapshots;
+    }
+
+    public function getLatestSnapshot()
+    {
+        return $this->latestSnapshot;
+    }
+
+    public function hasSnapshotDraft()
+    {
+        $snapshot = $this->getLatestSnapshot();
+        return $snapshot && $snapshot->getSnapshotMeta()->hasStatus(JobSnapshotStatus::ACTIVE);
+    }
 
     /**
      * @return string
@@ -372,14 +404,16 @@ class Job extends BaseEntity implements JobInterface,
      * Gets the name oof the company. If there is an organization assigned to the
      * job posting. Take the name of the organization.
      *
-     * (non-PHPdoc)
+     * @param bool $useOrganizationEntity Get the name from the organization entity, if it is available.
      * @see \Jobs\Entity\JobInterface::getCompany()
+     * @return string
      */
-    public function getCompany()
+    public function getCompany($useOrganizationEntity = true)
     {
-        if ($this->organization) {
+        if ($this->organization && $useOrganizationEntity) {
             return $this->organization->getOrganizationName()->getName();
         }
+
         return $this->company;
     }
 
@@ -417,6 +451,8 @@ class Job extends BaseEntity implements JobInterface,
 
         return $this;
     }
+
+
 
     /**
      * (non-PHPdoc)
@@ -481,7 +517,7 @@ class Job extends BaseEntity implements JobInterface,
             $array=[];
             if(null != $this->locations){
                 foreach ($this->locations as $location) { /* @var \Core\Entity\LocationInterface $location */
-                    $array[]=$location->getCity();
+                    $array[]=(string) $location;
                 }
                 return implode(', ', $array);
             }
@@ -538,6 +574,17 @@ class Job extends BaseEntity implements JobInterface,
             }
             $this->user=null;
         }
+
+        return $this;
+    }
+
+    public function unsetOrganization($removePermissions = true)
+    {
+        if($this->organization && $removePermissions){
+            $this->getPermissions()->revoke($this->organization,Permissions::PERMISSION_ALL);
+        }
+
+        $this->organization = null;
 
         return $this;
     }
@@ -969,7 +1016,7 @@ class Job extends BaseEntity implements JobInterface,
      * Gets the list of channels where the job opening should be published
      *
      * {@inheritdoc}
-     * @return Array
+     * @return array
      */
     public function getPortals()
     {
@@ -1069,6 +1116,11 @@ class Job extends BaseEntity implements JobInterface,
         $this->isDeleted = true;
 
         return $this;
+    }
+
+    public function isDeleted()
+    {
+        return $this->isDeleted;
     }
 
 

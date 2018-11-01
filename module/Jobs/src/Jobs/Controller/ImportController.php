@@ -15,10 +15,11 @@ use Geo\Entity\Geometry\Point;
 use Jobs\Entity\Location;
 use Jobs\Entity\TemplateValues;
 use Organizations\Entity\Employee;
+use Psr\Container\ContainerInterface;
 use Zend\Json\Json;
 use Zend\Mvc\Controller\AbstractActionController;
+use Zend\ServiceManager\ServiceManager;
 use Zend\View\Model\JsonModel;
-use Zend\Stdlib\Parameters;
 use Core\Entity\PermissionsInterface;
 use Jobs\Listener\Events\JobEvent;
 use Jobs\Listener\Response\JobResponse;
@@ -31,17 +32,17 @@ class ImportController extends AbstractActionController
 {
 
     /**
-     * attaches further Listeners for generating / processing the output
-     * @return $this
+     *
+     *
+     * @var ServiceManager
      */
-    public function attachDefaultListeners()
+    private $serviceLocator;
+    public static function factory(ContainerInterface $container, $requestedName, array $options = null)
     {
-        parent::attachDefaultListeners();
-        $serviceLocator  = $this->serviceLocator;
-        $defaultServices = $serviceLocator->get('DefaultListeners');
-        $events          = $this->getEventManager();
-        $events->attach($defaultServices);
-        return $this;
+        $controller = new self();
+        $controller->serviceLocator = $container;
+
+        return $controller;
     }
 
     /**
@@ -57,6 +58,7 @@ class ImportController extends AbstractActionController
 
         $params          = $this->params();
         $p               = $params->fromPost();
+        /* @var \Auth\Entity\User $user */
         $user            = $services->get('AuthenticationService')->getUser();
         $repositories    = $services->get('repositories');
         /* @var \Jobs\Repository\Job $repositoriesJob */
@@ -65,7 +67,7 @@ class ImportController extends AbstractActionController
 
         $result = array('token' => session_id(), 'isSaved' => false, 'message' => '', 'portals' => array());
         try {
-            if (isset($user) && !empty($user->login)) {
+            if (isset($user) && !empty($user->getLogin())) {
                 $formElementManager = $services->get('FormElementManager');
                 /* @var \Jobs\Form\Import $form */
                 $form               = $formElementManager->get('Jobs/Import');
@@ -96,7 +98,8 @@ class ImportController extends AbstractActionController
                 if ($request->isPost()) {
                     $loginSuffix                   = '';
                     $event                         = $this->getEvent();
-                    $loginSuffixResponseCollection = $this->getEventManager()->trigger('login.getSuffix', $event);
+                    $event->setName('login.getSuffix');
+                    $loginSuffixResponseCollection = $this->getEventManager()->triggerEvent($event);
                     if (!$loginSuffixResponseCollection->isEmpty()) {
                         $loginSuffix = $loginSuffixResponseCollection->last();
                     }
@@ -115,6 +118,7 @@ class ImportController extends AbstractActionController
                         $entity->setStatus($params['status']);
                         /*
                          * Search responsible user via contactEmail
+                         * @var \Auth\Repository\User $users
                          */
                         $users = $repositories->get('Auth/User');
                         $responsibleUser = $users->findByEmail($params['contactEmail']);
@@ -126,14 +130,14 @@ class ImportController extends AbstractActionController
                             $entity->getPermissions()->grant($group, PermissionsInterface::PERMISSION_VIEW);
                         }
                         $result['isSaved'] = true;
-                        $log->info('Jobs/manage/saveJob [user: ' . $user->login . ']:' . var_export($p, true));
+                        $log->info('Jobs/manage/saveJob [user: ' . $user->getLogin() . ']:' . var_export($p, true));
 
                         if (!empty($params->companyId)) {
                             $companyId                = $params->companyId . $loginSuffix;
                             $repOrganization          = $repositories->get('Organizations/Organization');
-                            $hydratorManager          = $services->get('hydratorManager');
+                            $hydratorManager          = $services->get('HydratorManager');
                             /* @var \Organizations\Entity\Hydrator\OrganizationHydrator $hydrator */
-                            $hydrator                 = $hydratorManager->get('Hydrator/Organization');
+                            $hydrator                 = $hydratorManager->get('Hydrator\Organization');
                             $entityOrganizationFromDB = $repOrganization->findbyRef($companyId);
                             //$permissions              = $entityOrganizationFromDB->getPermissions();
                             $data = array(
@@ -145,6 +149,11 @@ class ImportController extends AbstractActionController
                             //$permissions->grant($user, PermissionsInterface::PERMISSION_CHANGE);
 
                             $entityOrganization = $hydrator->hydrate($data, $entityOrganizationFromDB);
+
+                            if ($params->companyUrl) {
+                                $entityOrganization->getContact()->setWebsite($params->companyUrl);
+                            }
+
                             if ($responsibleUser && $user !== $responsibleUser) {
                                 /*
                                  * We cannot use custom collections yet
@@ -189,24 +198,34 @@ class ImportController extends AbstractActionController
                                 $jobLocations->add($location);
                             }
                         }
+
+                        /* @var \Core\EventManager\EventManager $jobEvents
+                         * @var JobEvent $jobEvent */
+                        $jobEvents = $services->get('Jobs/Events');
+                        $jobEvent = $jobEvents->getEvent(JobEvent::EVENT_IMPORT_DATA, $this);
+                        $jobEvent->setJobEntity($entity);
+
+                        $extra = [];
+                        foreach (array('channels', 'position', 'branches', 'keywords', 'description') as $paramName) {
+                            $data = $params->get($paramName);
+                            if ($data) {
+                                $data = Json::decode($data, Json::TYPE_ARRAY);
+                                $extra[$paramName] = $data;
+                                $jobEvent->setParam($paramName, $data);
+                            }
+                        }
+
+                        $jobEvents->triggerEvent($jobEvent);
                         $repositoriesJob->store($entity);
+
                         $id = $entity->getId();
                         if (!empty($id)) {
-                            $jobEvent = $services->get('Jobs/Event');
+                            $jobEvent = $services->get('Jobs/Event'); // intentinally override
                             $jobEvent->setJobEntity($entity);
 
-                            $extra = [];
-                            foreach (array('channels', 'positions', 'branches', 'keywords', 'description') as $paramName) {
-                                $data = $params->get($paramName);
-                                if ($data) {
-                                    $data = Json::decode($data, Json::TYPE_ARRAY);
-                                    if ('channels' == $paramName) {
-                                        foreach (array_keys($data) as $portalName) {
-                                            $jobEvent->addPortal($portalName);
-                                        }
-                                    }
-
-                                    $extra[$paramName] = $data;
+                            if (isset($extra['channels'])) {
+                                foreach ($extra['channels'] as $portalName => $trash) {
+                                    $jobEvent->addPortal($portalName);
                                 }
                             }
                             $jobEvent->setParam('extraData', $extra);
@@ -214,9 +233,10 @@ class ImportController extends AbstractActionController
                             if ($createdJob || true) {
                                 /* @var $jobEvents \Zend\EventManager\EventManager */
                                 $jobEvents = $services->get('Jobs/Events');
-                                $jobEvent->setName(JobEvent::EVENT_JOB_ACCEPTED)
-                                         ->setTarget($this);
-                                $responses = $jobEvents->trigger($jobEvent);
+                                $jobEvent->setName(JobEvent::EVENT_JOB_ACCEPTED);
+                                $jobEvent->setTarget($this);
+                                $responses = $jobEvents->triggerEvent($jobEvent);
+
                                 foreach ($responses as $response) {
                                     // responses from the portals
                                     // @TODO, put this in some conclusion and meaningful messages

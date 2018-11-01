@@ -9,8 +9,9 @@
 
 namespace AuthTest\Factory\Controller;
 
-use Zend\ServiceManager\ServiceLocatorInterface;
-use Zend\Mvc\Controller\ControllerManager;
+use Auth\Repository\User;
+use CoreTestUtils\TestCase\ServiceManagerMockTrait;
+use Interop\Container\ContainerInterface;
 use Auth\Factory\Controller\RemoveControllerFactory;
 use Auth\Controller\RemoveController;
 use Auth\Dependency\Manager;
@@ -21,11 +22,12 @@ use Auth\AuthenticationService;
  */
 class RemoveControllerFactoryTest extends \PHPUnit_Framework_TestCase
 {
+    use ServiceManagerMockTrait;
 
     /**
-     * @covers ::createService
+     * @covers ::__invoke
      */
-    public function testCreateService()
+    public function testInvokation()
     {
         $manager = $this->getMockBuilder(Manager::class)
             ->disableOriginalConstructor()
@@ -34,24 +36,19 @@ class RemoveControllerFactoryTest extends \PHPUnit_Framework_TestCase
         $authService = $this->getMockBuilder(AuthenticationService::class)
             ->disableOriginalConstructor()
             ->getMock();
-        
-        $serviceLocator = $this->getMockBuilder(ServiceLocatorInterface::class)
+        $userRepo = $this->getMockBuilder(User::class)->disableOriginalConstructor()->getMock();
+        $repositories = $this->createPluginManagerMock(['Auth/User' => ['service' => $userRepo, 'count' => 1]]);
+        $serviceLocator = $this->getMockBuilder(ContainerInterface::class)
             ->getMock();
-        $serviceLocator->expects($this->exactly(2))
+        $serviceLocator->expects($this->exactly(3))
             ->method('get')
             ->will($this->returnValueMap([
                 ['Auth/Dependency/Manager', $manager],
-                ['AuthenticationService', $authService]
+                ['AuthenticationService', $authService],
+                ['repositories', $repositories]
             ]));
         
-        $controllerManager = $this->getMockBuilder(ControllerManager::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $controllerManager->expects($this->once())
-            ->method('getServiceLocator')
-            ->willReturn($serviceLocator);
-        
         $controllerFactory = new RemoveControllerFactory();
-        $this->assertInstanceOf(RemoveController::class, $controllerFactory->createService($controllerManager));
+        $this->assertInstanceOf(RemoveController::class, $controllerFactory($serviceLocator,'irrelevant'));
     }
 }

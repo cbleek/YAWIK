@@ -46,7 +46,7 @@ return array(
                         'options' => array(
                             'route' => '/applications-dashboard',
                             'defaults' => array(
-                                'controller' => '\Applications\Controller\Index',
+                                'controller' => 'Applications\Controller\Index',
                                 'action' => 'dashboard'
                             )
                         )
@@ -56,7 +56,7 @@ return array(
                         'options' => array(
                             'route' => '/applications',
                             'defaults' => array(
-                                'controller' => '\Applications\Controller\Manage',
+                                'controller' => 'Applications/Controller/Manage',
                                 'action' => 'index'
                             )
                         ),

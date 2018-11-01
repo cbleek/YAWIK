@@ -12,6 +12,7 @@
 namespace Jobs\Filter;
 
 use Jobs\Entity\Job;
+use Jobs\View\Helper\JsonLd;
 use Zend\Filter\FilterInterface;
 use Zend\View\Model\ViewModel;
 
@@ -54,7 +55,7 @@ abstract class ViewModelTemplateFilterAbstract implements FilterInterface
     protected $basePathHelper;
 
     /**
-     * @var $serverUrlHelper \Zend\View\Helper\ServiceUrl
+     * @var $serverUrlHelper \Zend\View\Helper\ServerUrl
      */
     protected $serverUrlHelper;
 
@@ -62,6 +63,33 @@ abstract class ViewModelTemplateFilterAbstract implements FilterInterface
      * @var $imageFileCacheHelper \Organizations\ImageFileCache\Manager
      */
     protected $imageFileCacheHelper;
+
+    /**
+     *
+     *
+     * @var JsonLd
+     */
+    protected $jsonLdHelper;
+
+    /**
+     * @param \Jobs\View\Helper\JsonLd $jsonLdHelper
+     *
+     * @return self
+     */
+    public function setJsonLdHelper(JsonLd $jsonLdHelper)
+    {
+        $this->jsonLdHelper = $jsonLdHelper;
+
+        return $this;
+    }
+
+    /**
+     * @return \Jobs\View\Helper\JsonLd
+     */
+    public function getJsonLdHelper()
+    {
+        return $this->jsonLdHelper;
+    }
 
     /**
      * @param $config
@@ -142,6 +170,7 @@ abstract class ViewModelTemplateFilterAbstract implements FilterInterface
         $model = new ViewModel();
         $this->container = array();
         $this->extract($value);
+        $this->container['job'] = $this->job;
         $model->setVariables($this->container);
         if (!isset($this->job)) {
             throw new \InvalidArgumentException('cannot create a viewModel for Templates without an $job');

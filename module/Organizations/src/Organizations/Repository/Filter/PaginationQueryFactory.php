@@ -11,14 +11,14 @@
 namespace Organizations\Repository\Filter;
 
 use Interop\Container\ContainerInterface;
-use \Zend\ServiceManager\FactoryInterface;
-use \Zend\ServiceManager\ServiceLocatorInterface;
+use \Zend\ServiceManager\Factory\FactoryInterface;
 
 /**
  * Factory for the PaginationQuery
  *
  * @package Organizations
  * @author Mathias Weitz <weitz@cross-solution.de>
+ * @author Anthonius Munthi <me@itstoni.com>
  */
 
 class PaginationQueryFactory implements FactoryInterface
@@ -34,20 +34,10 @@ class PaginationQueryFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $auth = $container->get('AuthenticationService');
-        $filter = new PaginationQuery($auth);
+        /* @TODO: $jobRepository should be removed when using aggregation query in filtering profile */
+        $authService = $container->get('AuthenticationService');
+        $jobRepository = $container->get('Core/RepositoryService')->get('Jobs/Job');
+        $filter = new PaginationQuery($jobRepository,$authService);
         return $filter;
-    }
-    /**
-     * Creates pagination Service
-     *
-     * @see \Zend\ServiceManager\FactoryInterface::createService()
-     * @param ServiceLocatorInterface $serviceLocator
-     * @return \Organizations\Repository\Filter\PaginationQuery|mixed
-     */
-    public function createService(ServiceLocatorInterface $serviceLocator)
-    {
-        /* @var $serviceLocator \Zend\ServiceManager\AbstractPluginManager */
-        return $this($serviceLocator->getServiceLocator(), PaginationQuery::class);
     }
 }

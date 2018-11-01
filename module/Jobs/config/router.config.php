@@ -55,14 +55,10 @@ $routes = [
                         'defaults' => array(
                             'controller' => 'Jobs/ApiJobListByOrganization',
                             'action' => 'index',
-                            'defaults' => array(
-                                'defaults' => array(
-                                    'organizationId' => 0
-                                ),
-                                'constraints' => array(
-                                    'organizationId' => '[a-f0-9]+',
-                                ),
-                            ),
+                            'organizationId' => 0,
+                        ),
+                        'constraints' => array(
+                            'organizationId' => '[a-f0-9]+',
                         ),
                     ),
                     'may_terminate' => true,
@@ -157,18 +153,6 @@ $routes = [
                         'defaults' => array(
                             'controller' => 'Jobs/Index',
                             'action' => 'dashboard'
-                        ),
-                    ),
-                    'may_terminate' => true,
-                ),
-                'typeahead' => array(
-                    'type' => 'Literal',
-                    'options' => array(
-                        'route' => '/typeahead',
-                        'defaults' => array(
-                            'controller' => 'Jobs/Index',
-                            'action' => 'typeahead',
-                            'forceJson' => true,
                         ),
                     ),
                     'may_terminate' => true,

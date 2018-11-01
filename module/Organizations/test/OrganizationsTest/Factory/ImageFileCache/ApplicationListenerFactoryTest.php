@@ -22,9 +22,9 @@ class ApplicationListenerFactoryTest extends \PHPUnit_Framework_TestCase
 {
 
     /**
-     * @covers ::createService
+     * @covers ::__invoke
      */
-    public function testCreateService()
+    public function testInvokation()
     {
         $manager = $this->getMockBuilder(Manager::class)
             ->disableOriginalConstructor()
@@ -51,7 +51,7 @@ class ApplicationListenerFactoryTest extends \PHPUnit_Framework_TestCase
             ]));
         
         $factory = new ApplicationListenerFactory();
-        $listener = $factory->createService($serviceLocator);
+        $listener = $factory->__invoke($serviceLocator,'irrelevant');
         $this->assertInstanceOf(ApplicationListener::class, $listener);
     }
 }

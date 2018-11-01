@@ -15,6 +15,7 @@ use Organizations\Controller\Plugin\AcceptInvitationHandler;
 use Organizations\Entity\Organization;
 use Organizations\Entity\OrganizationName;
 use Zend\View\Model\ViewModel;
+use Organizations\Repository\Organization as OrganizationRepository;
 
 /**
  * Tests for \Organizations\Controller\InviteEmployeeController
@@ -26,10 +27,30 @@ use Zend\View\Model\ViewModel;
  */
 class InviteEmployeeControllerTest extends \PHPUnit_Framework_TestCase
 {
+    /**
+     * @var InviteEmployeeController
+     */
+    private $target;
+
+    /**
+     * @var OrganizationRepository
+     */
+    private $orgRepo;
+
+    /**
+     * @var array
+     */
+    private $queryParams;
+
+    /**
+     * @var array
+     */
+    private $pluginsMockMap;
 
     public function setup()
     {
-        $this->target = new InviteEmployeeController();
+        $this->orgRepo = $this->createMock(OrganizationRepository::class);
+        $this->target = new InviteEmployeeController($this->orgRepo);
 
         $name = $this->getName(false);
         if ('testExtendsAbstractActionController' == $name) {
@@ -37,14 +58,33 @@ class InviteEmployeeControllerTest extends \PHPUnit_Framework_TestCase
         }
 
 
-        $plugins = $this->getMockBuilder('\Zend\Mvc\Controller\PluginManager')->disableOriginalConstructor()->getMock();
-        $plugins->expects($this->any())->method('get')->will($this->returnCallback(array($this, 'retrievePluginMock')));
+        $plugins = $this
+	        ->getMockBuilder('\Zend\Mvc\Controller\PluginManager')
+	        ->disableOriginalConstructor()
+	        ->getMock()
+        ;
+        $plugins
+	        ->expects($this->any())
+	        ->method('get')
+	        ->will($this->returnCallback(array($this, 'retrievePluginMock')))
+        ;
 
         $this->target->setPluginManager($plugins);
 
-        $params = $this->getMockBuilder('\Zend\Mvc\Controller\Plugin\Params')->disableOriginalConstructor()->getMock();
-        $params->expects($this->any())->method('__invoke')->will($this->returnSelf());
-        $params->expects($this->any())->method('fromQuery')->will($this->returnCallback(array($this, 'retrieveQueryParam')));
+        $params = $this->getMockBuilder('\Zend\Mvc\Controller\Plugin\Params')
+                       ->disableOriginalConstructor()
+                       ->getMock()
+        ;
+        $params
+	        ->expects($this->any())
+	        ->method('__invoke')
+	        ->will($this->returnSelf())
+        ;
+        $params
+	        ->expects($this->any())
+	        ->method('fromQuery')
+	        ->will($this->returnCallback(array($this, 'retrieveQueryParam')))
+        ;
 
         $this->pluginsMockMap['params'] = $params;
     }
@@ -93,16 +133,11 @@ class InviteEmployeeControllerTest extends \PHPUnit_Framework_TestCase
 
         $this->queryParams['organization'] = $id;
 
-        $organizations = $this->getMockBuilder('\Organizations\Repository\Organization')->disableOriginalConstructor()->getMock();
-        $organizations->expects($this->once())->method('find')->with($id)->willReturn($organization);
-
-        $repositories = $this->getMockBuilder('\Core\Repository\RepositoryService')->disableOriginalConstructor()->getMock();
-        $repositories->expects($this->once())->method('get')->with('Organizations')->willReturn($organizations);
-
-        $services = $this->getMockBuilder('\Zend\ServiceManager\ServiceManager')->disableOriginalConstructor()->getMock();
-        $services->expects($this->once())->method('get')->with('repositories')->willReturn($repositories);
-
-        $this->target->setServiceLocator($services);
+        $this->orgRepo->expects($this->once())
+            ->method('find')
+            ->with($id)
+            ->willReturn($organization)
+        ;
     }
 
     private function setupForwardPluginMock($result)
@@ -211,7 +246,5 @@ class InviteEmployeeControllerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(500, $this->target->getResponse()->getStatusCode());
         $this->assertEquals('organizations/error/invite', $model->getTemplate());
         $this->assertEquals($expectedMessage, $model->getVariable('message'));
-
-
     }
 }

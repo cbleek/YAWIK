@@ -2,13 +2,15 @@
 
 namespace Auth\Adapter;
 
+use Interop\Container\ContainerInterface;
 use Zend\Authentication\Adapter\AbstractAdapter;
 use Zend\Authentication\Result;
 use Auth\Entity\Filter\CredentialFilter;
 use Zend\ServiceManager\ServiceLocatorInterface;
 
 /**
- * This class allows an external application to authenticate via a pre-shared application key.
+ * This class allows an external application to authenticate via a pre-shared application key and to
+ * push job openings via Rest Calls
  *
  * Class ExternalApplication
  * @package Auth\Adapter
@@ -17,8 +19,13 @@ class ExternalApplication extends AbstractAdapter
 {
     
     protected $applicationKey;
+
+    /* @var $repository \Auth\Repository\User */
     protected $repository;
+
     protected $applicationKeys = array();
+
+    /* @var  $serviceManager ServiceLocatorInterface */
     protected $serviceManager;
 
     /**
@@ -34,17 +41,17 @@ class ExternalApplication extends AbstractAdapter
         $this->setCredential($credential);
         $this->setApplicationKey($applicationKey);
     }
-
-    /**
-     * @param ServiceLocatorInterface $serviceManager
-     */
-    public function setServiceLocator(ServiceLocatorInterface $serviceManager)
+	
+	/**
+	 * @param ContainerInterface $serviceManager
+	 */
+    public function setServiceLocator(ContainerInterface $serviceManager)
     {
         $this->serviceManager = $serviceManager;
     }
 
     /**
-     * @return mixed
+     * @return \Auth\Repository\User
      */
     public function getRepository()
     {
@@ -114,6 +121,7 @@ class ExternalApplication extends AbstractAdapter
         //$login         = (0 < $applicationIdIndex &&  strlen($identity) - strlen($applicationId) == $applicationIdIndex)?substr($identity, 0, $applicationIdIndex):$identity;
         $login         = $identity;
         $users         = $this->getRepository();
+        /* @var \Auth\Entity\User $user */
         $user          = $users->findByLogin($login, ['allowDeactivated' => true]);
         $filter        = new CredentialFilter();
         $credential    = $this->getCredential();
@@ -126,11 +134,11 @@ class ExternalApplication extends AbstractAdapter
             // the login ends with the applicationID, therefore use the secret key
             // the external login must be the form 'xxxxx@yyyy' where yyyy is the matching suffix to the external application key
             if (isset($user)) {
-                if ($user->secret == $filter->filter($credential)) {
+                if ($user->getSecret() == $filter->filter($credential)) {
                     $loginSuccess = true;
                 } else {
                     $loginSuccess = false;
-                    $this->serviceManager->get('Core/Log')->info('User ' . $login . ', secret: ' . $user->secret . ' != loginPassword: ' . $filter->filter($credential) . ' (' . $credential . ')');
+                    $this->serviceManager->get('Core/Log')->info('User ' . $login . ', secret: ' . $user->getSecret() . ' != loginPassword: ' . $filter->filter($credential) . ' (' . $credential . ')');
                 }
             } else {
                 $user = $users->create(
@@ -146,8 +154,8 @@ class ExternalApplication extends AbstractAdapter
                 $loginResult = array('firstLogin' => true);
             }
         } elseif (isset($user)) {
-            $this->serviceManager->get('Core/Log')->debug('User ' . $login . ', login with noncorrect suffix: ');
-            if ($user->credential == $filter->filter($credential)) {
+            $this->serviceManager->get('Core/Log')->debug('User ' . $login . ', login with incorrect suffix: ');
+            if ($user->getCredential() == $filter->filter($credential)) {
                 $this->serviceManager->get('Core/Log')->debug('User ' . $login . ', credentials are equal');
                 $loginSuccess = true;
             } elseif (!empty($applicationId)) {
@@ -155,7 +163,7 @@ class ExternalApplication extends AbstractAdapter
                 // TODO: remove this code as soon as the secret key has been fully established
                 // basically this does allow an external login with an applicationIndex match against the User-Password
                 // the way it had been used in the start
-                if ($user->credential == $filter->filter($credential)) {
+                if ($user->getCredential() == $filter->filter($credential)) {
                     $this->serviceManager->get('Core/Log')->debug('User ' . $login . ', credentials2 test');
                     $loginSuccess = true;
                 }
@@ -165,6 +173,6 @@ class ExternalApplication extends AbstractAdapter
         if (!$loginSuccess) {
             return new Result(Result::FAILURE_CREDENTIAL_INVALID, $identity, array('User not known or invalid credential'));
         }
-        return new Result(Result::SUCCESS, $user->id, $loginResult);
+        return new Result(Result::SUCCESS, $user->getId(), $loginResult);
     }
 }

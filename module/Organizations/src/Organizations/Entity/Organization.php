@@ -36,12 +36,29 @@ use Zend\Permissions\Acl\Resource\ResourceInterface;
  * @todo   write test
  * @author Mathias Weitz <weitz@cross-solution.de>
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
+ * @author Anthonius Munthi <me@itstoni.com>
  */
 class Organization extends BaseEntity implements
     OrganizationInterface,
     DraftableEntityInterface,
     ResourceInterface
 {
+
+    /**
+     * Always enabled even if there are no active jobs
+     */
+    const PROFILE_ALWAYS_ENABLE     = 'always';
+
+    /**
+     * Hide if there are no jobs available
+     */
+    const PROFILE_ACTIVE_JOBS       = 'active-jobs';
+
+    /**
+     * Always disabled profile
+     */
+    const PROFILE_DISABLED          = 'disabled';
+
     /**
      * Event name of post construct event.
      *
@@ -62,7 +79,7 @@ class Organization extends BaseEntity implements
      * The actual name of the organization.
      *
      * @var \Organizations\Entity\OrganizationName
-     * @ODM\ReferenceOne(targetDocument="\Organizations\Entity\OrganizationName", simple=true, cascade="persist")
+     * @ODM\ReferenceOne(targetDocument="\Organizations\Entity\OrganizationName", storeAs="id", cascade="persist")
      */
     protected $organizationName;
 
@@ -86,7 +103,7 @@ class Organization extends BaseEntity implements
      * primary logo of an organization
      *
      * @var \Organizations\Entity\OrganizationImage
-     * @ODM\ReferenceOne(targetDocument="\Organizations\Entity\OrganizationImage", inversedBy="organization", simple=true, nullable="true", cascade={"all"})
+     * @ODM\ReferenceOne(targetDocument="\Organizations\Entity\OrganizationImage", inversedBy="organization", storeAs="id", nullable="true", cascade={"all"})
      */
     protected $image;
 
@@ -94,14 +111,15 @@ class Organization extends BaseEntity implements
      *
      *
      * @ODM\EmbedOne(targetDocument="\Core\Entity\ImageSet")
-     * @var Images
+     * @var ImageSet
      */
     protected $images;
+
     /**
      * Flag indicating draft state of this job.
      *
      * @var bool
-     * @ODM\Boolean
+     * @ODM\Field(type="boolean")
      */
     protected $isDraft = false;
 
@@ -125,7 +143,7 @@ class Organization extends BaseEntity implements
      *
      * @see   setParent()
      * @var OrganizationInterface | null
-     * @ODM\ReferenceOne(targetDocument="\Organizations\Entity\Organization", simple=true, nullable=true)
+     * @ODM\ReferenceOne(targetDocument="\Organizations\Entity\Organization", storeAs="id", nullable=true)
      * @since 0.18
      */
     protected $parent;
@@ -154,7 +172,7 @@ class Organization extends BaseEntity implements
      * Jobs of this organization.
      *
      * @var Collection
-     * @ODM\ReferenceMany(targetDocument="\Jobs\Entity\Job", simple=true, mappedBy="organization")
+     * @ODM\ReferenceMany(targetDocument="\Jobs\Entity\Job", storeAs="id", mappedBy="organization")
      * @since 0.18
      */
     protected $jobs;
@@ -163,7 +181,7 @@ class Organization extends BaseEntity implements
      * the owner of a Organization
      *
      * @var UserInterface $user
-     * @ODM\ReferenceOne(targetDocument="\Auth\Entity\User", simple=true)
+     * @ODM\ReferenceOne(targetDocument="\Auth\Entity\User", storeAs="id")
      * @ODM\Index
      */
     protected $user;
@@ -185,6 +203,33 @@ class Organization extends BaseEntity implements
     protected $workflowSettings;
 
     /**
+     * Profile Setting
+     * @var string
+     * @ODM\Field(type="string", nullable=true)
+     */
+    protected $profileSetting;
+
+    /**
+     * @return string
+     */
+    public function getProfileSetting()
+    {
+        return $this->profileSetting;
+    }
+
+    /**
+     * @param string $profileSetting
+     *
+     * @return $this
+     */
+    public function setProfileSetting($profileSetting)
+    {
+        $this->profileSetting = $profileSetting;
+
+        return $this;
+    }
+
+    /**
      * Returns the string identifier of the Resource
      *
      * @return string
@@ -193,7 +238,6 @@ class Organization extends BaseEntity implements
     {
         return 'Entity/Organization';
     }
-
 
     /**
      * Gets the organization name
@@ -429,7 +473,6 @@ class Organization extends BaseEntity implements
         return $this->organizationName;
     }
 
-
     /**
      * Gets the Permissions of an organization
      *
@@ -593,8 +636,6 @@ class Organization extends BaseEntity implements
         return $this;
     }
 
-
-
     /**
      * Sets the Contact Data of an organization
      *
@@ -625,7 +666,6 @@ class Organization extends BaseEntity implements
 
         return $this->contact;
     }
-
 
     /**
      * Gets the default description of an organization.
@@ -731,7 +771,6 @@ class Organization extends BaseEntity implements
 
         return $employees;
     }
-
 
     public function setUser(UserInterface $user)
     {

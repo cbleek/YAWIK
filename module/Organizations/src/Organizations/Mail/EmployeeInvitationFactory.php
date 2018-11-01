@@ -11,21 +11,20 @@
 namespace Organizations\Mail;
 
 use Auth\Entity\UserInterface;
-use Core\Mail\HTMLTemplateMessage;
 use Interop\Container\ContainerInterface;
 use Organizations\ImageFileCache\ODMListener;
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\MutableCreationOptionsInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
 
 /**
  * This Factory creates and configures the HTMLTemplateMail send to an invited person.
  *
- * @author Mathias Gelhausen <gelhausen@cross-solution.de>
- * @author Anthonius Munthi <me@itstoni.com>
- * @since  0.19
+ * @author  Mathias Gelhausen <gelhausen@cross-solution.de>
+ * @author  Anthonius Munthi <me@itstoni.com>
+ *
+ * @TODO    [ZF3] Check if removing MutableCreationsOptionsInterface is not affecting application
+ * @since   0.19
  */
-class EmployeeInvitationFactory implements FactoryInterface, MutableCreationOptionsInterface
+class EmployeeInvitationFactory implements FactoryInterface
 {
     /**
      * Dynamic options for each invocation.
@@ -49,7 +48,7 @@ class EmployeeInvitationFactory implements FactoryInterface, MutableCreationOpti
         /* @var $serviceLocator \Core\Mail\MailService */
         /* @var $owner \Auth\Entity\UserInterface */
         /* @var $user \Auth\Entity\UserInterface */
-
+		$this->setCreationOptions($options);
         $auth     = $container->get('AuthenticationService');
         $router   = $container->get('Router');
 
@@ -86,7 +85,7 @@ class EmployeeInvitationFactory implements FactoryInterface, MutableCreationOpti
                 $user->getOrganization()->getOrganization()->getOrganizationName()->getName();
         }
 
-        $mail = $container->get('MailService')->get('htmltemplate');
+        $mail = $container->get('Core/MailService')->get('htmltemplate');
         $mail->setTemplate($this->options['template'])
                 ->setVariables($variables)
                 ->setSubject(
@@ -108,7 +107,7 @@ class EmployeeInvitationFactory implements FactoryInterface, MutableCreationOpti
      * @return void
      * @throws \InvalidArgumentException
      */
-    public function setCreationOptions(array $options)
+    public function setCreationOptions(array $options=null)
     {
         if (!isset($options['user']) || !$options['user'] instanceof UserInterface) {
             throw new \InvalidArgumentException('An user interface is required!');
@@ -123,18 +122,5 @@ class EmployeeInvitationFactory implements FactoryInterface, MutableCreationOpti
         }
 
         $this->options = $options;
-    }
-
-    /**
-     * Create service
-     *
-     * @param ServiceLocatorInterface $serviceLocator
-     *
-     * @return mixed
-     */
-    public function createService(ServiceLocatorInterface $serviceLocator)
-    {
-        /* @var $serviceLocator \Core\Mail\MailService */
-        return $this($serviceLocator->getServiceLocator(), HTMLTemplateMessage::class);
     }
 }

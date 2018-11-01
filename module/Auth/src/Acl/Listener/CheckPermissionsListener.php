@@ -59,7 +59,7 @@ class CheckPermissionsListener implements ListenerAggregateInterface
      * @param  EventManagerInterface $events
      * @param  integer $priority
     */
-    public function attach(EventManagerInterface $events)
+    public function attach(EventManagerInterface $events, $priority=1)
     {
         $this->listeners[] = $events->attach(MvcEvent::EVENT_ROUTE, array($this, 'onRoute'), -10);
         $this->listeners[] = $events->attach(MvcEvent::EVENT_DISPATCH, array($this, 'onDispatch'), 10);
@@ -79,12 +79,12 @@ class CheckPermissionsListener implements ListenerAggregateInterface
             }
         }
     }
-    
-    /**
-     * test acl on route
-     * @param \Zend\Mvc\MvcEvent $event
-     * @return void
-     */
+	
+	/**
+	 * @param MvcEvent $event
+	 *
+	 * @return array|\ArrayAccess|mixed|object
+	 */
     public function onRoute(MvcEvent $event)
     {
         if ($event->isError()) {
@@ -124,7 +124,8 @@ class CheckPermissionsListener implements ListenerAggregateInterface
             $event->setError('Access denied');
             $event->setParam('exception', new $exceptionClass('You are not permitted to view this resource'));
             $eventManager = $event->getTarget()->getEventManager();
-            $results = $eventManager->trigger(MvcEvent::EVENT_DISPATCH_ERROR, $event);
+            $eventManager->setEventPrototype($event);
+            $results = $eventManager->trigger(MvcEvent::EVENT_DISPATCH_ERROR);
             if (count($results)) {
                 $return  = $results->last();
             } else {

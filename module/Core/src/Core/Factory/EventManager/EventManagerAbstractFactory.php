@@ -14,7 +14,7 @@ use Core\EventManager\EventProviderInterface;
 use Interop\Container\ContainerInterface;
 use Interop\Container\Exception\ContainerException;
 use Zend\EventManager\ListenerAggregateInterface;
-use Zend\ServiceManager\AbstractFactoryInterface;
+use Zend\ServiceManager\Factory\AbstractFactoryInterface;
 use Zend\ServiceManager\Exception\ServiceNotCreatedException;
 use Zend\ServiceManager\Exception\ServiceNotFoundException;
 use Zend\ServiceManager\ServiceLocatorInterface;
@@ -145,8 +145,7 @@ class EventManagerAbstractFactory implements AbstractFactoryInterface
          */
         return 0 === strpos(strrev($requestedName), 'stnevE/');
     }
-
-
+	
     public function canCreateServiceWithName(ServiceLocatorInterface $serviceLocator, $name, $requestedName)
     {
         return $this->canCreate($serviceLocator, $requestedName);
@@ -239,15 +238,10 @@ class EventManagerAbstractFactory implements AbstractFactoryInterface
         }
 
         $events->setIdentifiers($config['identifiers']);
-
-        if ($events instanceOf EventProviderInterface || method_exists($events, 'setEventPrototype')) {
-            /* @var \Zend\EventManager\EventInterface $event */
-            $event = $services->has($config['event']) ? $services->get($config['event']) : new $config['event']();
-            $events->setEventPrototype($event);
-        }
-        else {
-            $events->setEventClass($config['event']);
-        }
+	
+	    /* @var \Zend\EventManager\EventInterface $event */
+	    $event = $services->has($config['event']) ? $services->get($config['event']) : new $config['event']();
+	    $events->setEventPrototype($event);
 
         if ('EventManager' != $config['service'] && method_exists($events, 'setSharedManager') && $services->has('SharedEventManager')) {
             /* @var \Zend\EventManager\SharedEventManagerInterface $sharedEvents */
@@ -278,7 +272,7 @@ class EventManagerAbstractFactory implements AbstractFactoryInterface
                 foreach ($options['attach'] as $spec) {
                     $lazyListeners[] = [
                         'service' => $options['service'],
-                        'event' => $spec['events'],
+                        'event' => $spec['event'],
                         'method' => $spec['method'],
                         'priority' => $spec['priority'],
                     ];
@@ -305,7 +299,7 @@ class EventManagerAbstractFactory implements AbstractFactoryInterface
 
             foreach ($options['attach'] as $spec) {
                 $callback = $spec['method'] ? [ $listener, $spec['method'] ] : $listener;
-                $eventManager->attach($spec['events'], $callback, $spec['priority']);
+                $eventManager->attach($spec['event'], $callback, $spec['priority']);
             }
         }
 
@@ -355,7 +349,7 @@ class EventManagerAbstractFactory implements AbstractFactoryInterface
         $normalized = [
             'service' => $name,
             'attach' => null,
-            'priority' => 0,
+            'priority' => 1,
             'lazy' => false,
         ];
 
@@ -375,7 +369,7 @@ class EventManagerAbstractFactory implements AbstractFactoryInterface
 
         if (is_string($options)) {
             /* Only an event name is provided in config */
-            $normalized['attach'] = [ [ 'events' => [ $options ], 'method' => null, 'priority' => 0 ] ];
+            $normalized['attach'] = [ [ 'event' => $options, 'method' => null, 'priority' => 1 ] ];
             return $normalized;
 
         }
@@ -392,7 +386,7 @@ class EventManagerAbstractFactory implements AbstractFactoryInterface
         }
 
         $event = $method = null;
-        $priority = 0;
+        $priority = 1;
         $lazy = false;
 
         foreach ($options as $opt) {
@@ -420,7 +414,11 @@ class EventManagerAbstractFactory implements AbstractFactoryInterface
             }
         }
 
-        $normalized['attach'] = [ [ 'events' => $event, 'method' => $method, 'priority' => $priority ] ];
+        foreach ($event as &$eventSpec) {
+            $eventSpec = [ 'event' => $eventSpec, 'method' => $method, 'priority' => $priority ];
+        }
+
+        $normalized['attach'] = $event;
         $normalized['lazy']   = $lazy;
 
         return $normalized;
@@ -428,7 +426,7 @@ class EventManagerAbstractFactory implements AbstractFactoryInterface
 
     protected function normalizeEventsSpec($options)
     {
-        $listenerPriority = isset($options['priority']) ? $options['priority'] : 0;
+        $listenerPriority = isset($options['priority']) ? $options['priority'] : 1;
         $listenerMethod   = isset($options['method'])   ? $options['method']   : '__none__';
         $events = [];
 
@@ -467,11 +465,13 @@ class EventManagerAbstractFactory implements AbstractFactoryInterface
         $eventsSpec = [];
         foreach ($events as $method => $priorities) {
             foreach ($priorities as $priority => $event) {
-                $eventsSpec[] = [
-                    'events' => $event,
-                    'method' => '__none__' == $method ? null : $method,
-                    'priority' => $priority,
-                ];
+                foreach ($event as $ev) {
+                    $eventsSpec[] = [
+                        'event'    => $ev,
+                        'method'   => '__none__' == $method ? null : $method,
+                        'priority' => $priority,
+                    ];
+                }
             }
         }
 

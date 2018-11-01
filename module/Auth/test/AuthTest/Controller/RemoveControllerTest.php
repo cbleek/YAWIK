@@ -19,6 +19,9 @@ use Zend\Mvc\Controller\Plugin\Redirect;
 use Zend\Http\PhpEnvironment\Response;
 
 /**
+ *
+ * @author Anthonius Munthi <me@itstoni.com>
+ *
  * @coversDefaultClass \Auth\Controller\RemoveController
  */
 class RemoveControllerTest extends \PHPUnit_Framework_TestCase
@@ -40,6 +43,13 @@ class RemoveControllerTest extends \PHPUnit_Framework_TestCase
     protected $authService;
 
     /**
+     *
+     *
+     * @var \PHPUnit_Framework_MockObject_MockObject
+     */
+    protected $userRepository;
+
+    /**
      * @see PHPUnit_Framework_TestCase::setUp()
      */
     protected function setUp()
@@ -51,8 +61,12 @@ class RemoveControllerTest extends \PHPUnit_Framework_TestCase
         $this->authService = $this->getMockBuilder(AuthenticationService::class)
             ->disableOriginalConstructor()
             ->getMock();
+
+        $this->userRepository = $this->getMockBuilder(\Auth\Repository\User::class)
+            ->disableOriginalConstructor()
+            ->getMock();
     
-        $this->controller = new RemoveController($this->dependencies, $this->authService);
+        $this->controller = new RemoveController($this->dependencies, $this->authService, $this->userRepository);
     }
     
     /**
@@ -109,15 +123,13 @@ class RemoveControllerTest extends \PHPUnit_Framework_TestCase
             ->with($this->equalTo('confirm'))
             ->willReturn('1');
         
-        $this->controller->getPluginManager()
-            ->setService('redirect', $redirect)
-            ->setService('params', $params);
+        $pluginManager = $this->controller->getPluginManager();
+        $pluginManager->setService('redirect', $redirect);
+		$pluginManager->setService('params', $params);
         
         $user = $this->getMockBuilder(User::class)
             ->getMock();
-        $user->expects($this->once())
-            ->method('setStatus')
-            ->with($this->equalTo(Status::INACTIVE));
+
         
         $this->dependencies->expects($this->once())
             ->method('removeItems')
@@ -129,7 +141,9 @@ class RemoveControllerTest extends \PHPUnit_Framework_TestCase
             ->willReturn($user);
         $this->authService->expects($this->once())
             ->method('clearIdentity');
-        
+
+        $this->userRepository->expects($this->once())->method('remove')->with($user);
+
         $this->assertSame($response, $this->controller->indexAction());
     }
     
@@ -169,6 +183,7 @@ class RemoveControllerTest extends \PHPUnit_Framework_TestCase
             ->willReturn($user);
         $this->authService->expects($this->never())
             ->method('clearIdentity');
+        $this->userRepository->expects($this->never())->method('remove')->with($user);
         
         $result = $this->controller->indexAction();
         $this->assertInternalType('array', $result);

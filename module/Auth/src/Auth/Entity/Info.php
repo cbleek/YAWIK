@@ -56,7 +56,7 @@ class Info extends AbstractEntity implements InfoInterface
      * Flag, if primary email is verified
      *
      * @var boolean
-     * @ODM\Boolean
+     * @ODM\Field(type="boolean")
      */
     protected $emailVerified;
     
@@ -113,7 +113,7 @@ class Info extends AbstractEntity implements InfoInterface
      * the photo of an users profile
      *
      * @var FileInterface
-     * @ODM\ReferenceOne(targetDocument="UserImage", simple=true, nullable=true, cascade={"all"})
+     * @ODM\ReferenceOne(targetDocument="UserImage", storeAs="id", nullable=true, cascade={"all"})
      */
     protected $image;
     
@@ -123,7 +123,14 @@ class Info extends AbstractEntity implements InfoInterface
      * @var string
      * @ODM\Field(type="string") */
     protected $street;
-    
+
+    /**
+     * country of the users address
+     *
+     * @var string
+     * @ODM\Field(type="string") */
+    protected $country;
+
     /**
      * {@inheritdoc}
      *
@@ -431,5 +438,26 @@ class Info extends AbstractEntity implements InfoInterface
     public function getStreet()
     {
         return $this->street;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return $this
+     */
+    public function setCountry($country)
+    {
+        $this->country=$country;
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return string
+     */
+    public function getCountry()
+    {
+        return $this->country;
     }
 }

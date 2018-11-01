@@ -9,7 +9,8 @@
  */
 ?>
 <?php $switchUserSession = new \Zend\Session\Container(\Auth\Controller\Plugin\UserSwitcher::SESSION_NAMESPACE);
-$lang = isset($this->lang)?$this->lang:$this->params('lang'); ?>
+$defaultLang = is_null($this->params('lang')) ? "en":$this->params('lang');
+$lang = isset($this->lang)?$this->lang:$defaultLang; ?>
 <ul id="yk-login-info" class="nav navbar-nav navbar-collapse collapse navbar-right">
     <li class="dropdown">
 
@@ -17,7 +18,7 @@ $lang = isset($this->lang)?$this->lang:$this->params('lang'); ?>
 
             <a class="dropdown-toggle" data-toggle="dropdown" href="#">
                 <?php if ($switchUserSession->isSwitchedUser): ?> [<?=$this->translate('switched')?>]<?php endif ?>
-                (<?php echo $this->translate($this->Acl()->getUser()->getRole())?>)
+                (<?php echo $this->translate($this->acl()->getUser()->getRole())?>)
                 <strong><?php echo $this->auth('info')->getDisplayName()?></strong>
                 <b class="caret"></b>
             </a>
@@ -61,7 +62,7 @@ $lang = isset($this->lang)?$this->lang:$this->params('lang'); ?>
                     ['query' => ['do' => 'clear']],
                     true
                     )?>"
-                        onclick="$.get($(this).attr('href'), function() { window.location.reload(); }); return false;">
+                        onclick="$.get($(this).attr('href'), function(data) { if (data.ref) { window.location.href = data.ref; } else { window.location.reload(); } }); return false;">
                         <?=$this->translate('Clear switched user')?></a>
                 </li>
                 <?php elseif ($this->acl()->isRole(\Auth\Entity\User::ROLE_ADMIN)): ?>
@@ -88,7 +89,7 @@ $lang = isset($this->lang)?$this->lang:$this->params('lang'); ?>
                 <?php endif ?>
                 <li class="divider"></li>
                 <li>
-                    <a href="<?php echo $this->url('auth-logout',array('lang' => $lang)) ?>"><span class="yk-icon yk-icon-logout fa-fw"></span><?php echo $this->translate('Logout')?></a>
+                    <a id="ykLogoutButton" href="<?php echo $this->url('auth-logout',array('lang' => $lang)) ?>"><span class="yk-icon yk-icon-logout fa-fw"></span><?php echo $this->translate('Logout')?></a>
                 </li>
             </ul>
 
@@ -113,7 +114,7 @@ $lang = isset($this->lang)?$this->lang:$this->params('lang'); ?>
                 <?php if (!isset($this->allowRegister) || $this->allowRegister == true): ?>
                     <li class="divider"></li>
                     <li class="disabled dropdown-header"><a><?php echo $this->translate('Login via')?>...</a></li>
-                    <?php foreach ($this->socialbuttons() as $provider => $name): ?>
+                    <?php foreach ($this->socialButtons() as $provider => $name): ?>
                         <li>
                             <a class="login-link" title="<?php echo sprintf($this->translate('Login with %s'), $name)?>" href="<?php echo $this->url('auth-provider', array('provider' => $provider), array('query' => array('ref' => urlencode($ref))))?>">
                                 <span class="fa fa-<?php echo $provider?> fa-fw"></span> <?php echo $name?>
@@ -143,7 +144,9 @@ $lang = isset($this->lang)?$this->lang:$this->params('lang'); ?>
                 <script type="text/javascript">
                     $('#su-form').submit(function(e) {
                        var $form = $(e.target);
-                        $.get($form.attr('action'), $form.serialize(), function() { window.location.reload(); });
+                       var data = $form.serialize();
+                       data.ref = encodeURIComponent(window.location.href);
+                            $.get($form.attr('action'), data, function() { window.location.reload(); });
                         return false;
                     });
 

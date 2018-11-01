@@ -29,9 +29,10 @@ class Module
      */
     public function onBootstrap(MvcEvent $e)
     {
+    	// we attach with wildcard events name
         $events = $e->getApplication()->getEventManager();
         $events->attach(
-            array(MvcEvent::EVENT_RENDER, MvcEvent::EVENT_RENDER_ERROR),
+            MvcEvent::EVENT_RENDER,
             new InjectSubNavigationListener(),
             10
         );

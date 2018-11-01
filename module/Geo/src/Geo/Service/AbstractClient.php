@@ -35,9 +35,12 @@ class AbstractClient
      */
     protected $cache;
 
+    protected $country;
 
-    public function __construct($uri, $cache = false)
+
+    public function __construct($uri, $country="DE", $cache = false)
     {
+        $this->country = $country;
         $this->client = $this->setupClient($uri);
         $this->cache = $cache;
 
@@ -59,6 +62,10 @@ class AbstractClient
 
     public function query($term, array $params = [])
     {
+    	/* @TODO: [ZF3] overriding $term value because it always returns null */
+    	if(is_null($term)){
+		    $term = $_REQUEST['q'];
+	    }
         $cacheId = md5($term);
 
         if ($this->cache && ($result = $this->cache->getItem($cacheId))) {

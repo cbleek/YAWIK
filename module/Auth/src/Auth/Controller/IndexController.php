@@ -17,6 +17,7 @@ use Auth\AuthenticationService;
 use Auth\Options\ModuleOptions;
 use Auth\Form\Login;
 use Auth\Form\Register;
+use Core\Repository\RepositoryService;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\Log\LoggerInterface;
 use Zend\View\Model\ViewModel;
@@ -57,18 +58,52 @@ class IndexController extends AbstractActionController
      */
     protected $options;
 
-    /**
-     * @param $auth  AuthenticationService
-     * @param $logger LoggerInterface
-     * @param $forms
-     * @param $options ModuleOptions
-     */
-    public function __construct(AuthenticationService $auth, LoggerInterface $logger, array $forms, $options)
+    protected $userLoginAdapter;
+    
+    protected $locale;
+    
+    protected $viewHelperManager;
+    
+    protected $hybridAuthAdapter;
+	
+    protected $repositories;
+    
+    protected $externalAdapter;
+    
+	/**
+	 * IndexController constructor.
+	 *
+	 * @param AuthenticationService $auth
+	 * @param LoggerInterface $logger
+	 * @param $userLoginAdapter
+	 * @param $locale
+	 * @param $urlHelper
+	 * @param array $forms
+	 * @param $options
+	 */
+    public function __construct(
+    	AuthenticationService $auth,
+	    LoggerInterface $logger,
+	    $userLoginAdapter,
+	    $locale,
+	    $urlHelper,
+	    array $forms,
+	    $options,
+		$hybridAuthAdapter,
+		$externalAdapter,
+		RepositoryService $repositories
+    )
     {
-        $this->auth = $auth;
-        $this->forms = $forms;
-        $this->logger = $logger;
-        $this->options = $options;
+        $this->auth              = $auth;
+        $this->forms             = $forms;
+        $this->logger            = $logger;
+        $this->options           = $options;
+        $this->userLoginAdapter  = $userLoginAdapter;
+        $this->locale            = $locale;
+        $this->viewHelperManager = $urlHelper;
+        $this->hybridAuthAdapter = $hybridAuthAdapter;
+        $this->externalAdapter   = $externalAdapter;
+        $this->repositories      = $repositories;
     }
 
     /**
@@ -83,8 +118,6 @@ class IndexController extends AbstractActionController
         }
 
         $viewModel        = new ViewModel();
-        $services         = $this->serviceLocator;
-
         /* @var $loginForm Login */
         $loginForm        = $this->forms[self::LOGIN];
         /* @var $registerForm Register */
@@ -95,7 +128,7 @@ class IndexController extends AbstractActionController
 
         if ($request->isPost()) {
             $data                          = $this->params()->fromPost();
-            $adapter                       = $services->get('Auth/Adapter/UserLogin');
+            $adapter                       = $this->userLoginAdapter;
             // inject suffixes via shared Events
             $loginSuffix                   = '';
             // @TODO: replace this by the Plugin LoginFilter
@@ -119,7 +152,7 @@ class IndexController extends AbstractActionController
             
             if ($result->isValid()) {
                 $user = $auth->getUser();
-                $language = $services->get('Core/Locale')->detectLanguage($request, $user);
+                $language = $this->locale->detectLanguage($request, $user);
                 $this->logger->info('User ' . $user->getLogin() . ' logged in');
                 
                 $ref = $this->params()->fromQuery('ref', false);
@@ -129,7 +162,7 @@ class IndexController extends AbstractActionController
                     $url = preg_replace('~/[a-z]{2}(/|$)~', '/' . $language . '$1', $ref);
                     $url = $request->getBasePath() . $url;
                 } else {
-                    $urlHelper = $services->get('ViewHelperManager')->get('url');
+                    $urlHelper = $this->viewHelperManager->get('url');
                     $url = $urlHelper('lang', array('lang' => $language));
                 }
                 $this->notification()->success(/*@translate*/ 'You are now logged in.');
@@ -188,9 +221,10 @@ class IndexController extends AbstractActionController
     {
         $ref = urldecode($this->getRequest()->getBasePath().$this->params()->fromQuery('ref'));
         $provider = $this->params('provider', '--keiner--');
-        $hauth = $this->serviceLocator->get('HybridAuthAdapter');
+        $hauth = $this->hybridAuthAdapter;
         $hauth->setProvider($provider);
         $auth = $this->auth;
+        
         $result = $auth->authenticate($hauth);
         $resultMessage = $result->getMessages();
 
@@ -199,10 +233,10 @@ class IndexController extends AbstractActionController
                 $user          = $auth->getUser();
                 $password      = substr(md5(uniqid()), 0, 6);
                 $login         = uniqid() . ($this->options->auth_suffix != "" ? '@' . $this->options->auth_suffix : '');
-                $externalLogin = isset($user->login)?$user->login:'-- not communicated --';
+                $externalLogin = $user->getLogin() ?: '-- not communicated --';
                 $this->logger->debug('first login via ' . $provider . ' as: ' . $externalLogin);
 
-                $user->login=$login;
+                $user->setLogin($login);
                 $user->setPassword($password);
                 $user->setRole($this->options->getRole());
 
@@ -257,8 +291,7 @@ class IndexController extends AbstractActionController
      */
     public function loginExternAction()
     {
-        $services   = $this->serviceLocator;
-        $adapter    = $services->get('ExternalApplicationAdapter');
+        $adapter    = $this->externalAdapter;
         $appKey     = $this->params()->fromPost('appKey');
 
         $adapter->setIdentity($this->params()->fromPost('user'))
@@ -294,7 +327,7 @@ class IndexController extends AbstractActionController
                     }
                 } catch (\Exception $e) {
                 }
-                $services->get('repositories')->store($user);
+                $this->repositories->store($user);
             }
             
             $resultMessage = $result->getMessages();
@@ -393,7 +426,7 @@ class IndexController extends AbstractActionController
         $groupUserId = array();
         $notFoundUsers = array();
         //$users = $this->getRepository();
-        $users = $this->serviceLocator->get('repositories')->get('Auth/User');
+        $users = $this->repositories->get('Auth/User');
         if (!empty($params->group)) {
             foreach ($params->group as $grp_member) {
                 try

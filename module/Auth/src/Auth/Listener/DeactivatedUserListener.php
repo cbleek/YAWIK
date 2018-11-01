@@ -10,12 +10,21 @@ use Zend\Mvc\MvcEvent;
 use Auth\Exception\UserDeactivatedException;
 use Zend\Http\PhpEnvironment\Response;
 
+/**
+ * Class DeactivatedUserListener
+ *
+ * @author  Carsten Bleek <bleek@cross-solution.de>
+ * @author  fedys
+ * @author  Anthonius Munthi <me@itstoni.com>
+ *
+ * @package Auth\Listener
+ */
 class DeactivatedUserListener extends ExceptionStrategy
 {
     /**
      * {@inheritDoc}
      */
-    public function attach(EventManagerInterface $events)
+    public function attach(EventManagerInterface $events, $priority = 1)
     {
         parent::attach($events);
         $this->listeners[] = $events->attach(MvcEvent::EVENT_ROUTE, [$this, 'checkDeactivatedUser']);

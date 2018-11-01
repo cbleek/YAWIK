@@ -10,31 +10,39 @@
 /** ActionController of Core */
 namespace Core\Controller;
 
+use Core\Listener\DefaultListener;
+use Interop\Container\ContainerInterface;
+use Zend\ModuleManager\ModuleManager;
+use Zend\ModuleManager\ModuleManagerInterface;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
-
-//use Settings\Repository\Settings;
 
 /**
  * Main Action Controller for the application.
  * Responsible for displaying the home site.
  *
+ * @author Anthonius Munthi <me@itstoni.com>
  */
 class IndexController extends AbstractActionController
 {
-    /**
-     * attaches further Listeners for generating / processing the output
-     * @return $this
-     */
-    public function attachDefaultListeners()
-    {
-        parent::attachDefaultListeners();
-        $serviceLocator  = $this->serviceLocator;
-        $defaultServices = $serviceLocator->get('DefaultListeners');
-        $events          = $this->getEventManager();
-        $events->attach($defaultServices);
-        return $this;
-    }
+	/** @var  DefaultListener */
+	private $defaultListener;
+	
+	private $config;
+	
+	/**
+	 * @var ModuleManager
+	 */
+	private $moduleManager;
+	
+	public function __construct(
+        ModuleManagerInterface $moduleManager,
+        $config
+    )
+	{
+		$this->config = $config;
+		$this->moduleManager = $moduleManager;
+	}
 
     /**
      * Home site
@@ -42,48 +50,19 @@ class IndexController extends AbstractActionController
      */
     public function indexAction()
     {
-        $auth = $this->auth();
-        $services = $this->serviceLocator;
-        if (!$auth->isLoggedIn()) {
-            $config = $services->get('config');
-            if (array_key_exists('startpage', $config['view_manager']['template_map'])) {
-                $this->layout()->setTerminal(true)->setTemplate('startpage');
-            }
-            return;
+        $auth = $this->Auth();
+        $config = $this->config;
+        if (array_key_exists('startpage', $config['view_manager']['template_map'])) {
+            $this->layout()->setTerminal(true)->setTemplate('startpage');
         }
-
-        $services = $this->serviceLocator;
-        $config   = $services->get('Config');
-
-        $dashboardConfig = array(
-            'controller' => 'Core\Controller\Index',
-            'action'     => 'dashboard',
-            'params'     => array()
-        );
-        
-        if (isset($config['dashboard'])) {
-            $dashboardConfig = array_merge(
-                $dashboardConfig,
-                /** Intersect array to filter out invalid keys that might be in config */
-                array_intersect_key($config['dashboard'], $dashboardConfig)
-            );
-        }
-        
-        extract($dashboardConfig); // $controller, $action, $params;
-        $params['action'] = $action;
-        
-        return $this->forward()->dispatch($controller, $params);
-        
+        return ['auth' => $auth];
     }
     
     public function dashboardAction()
     {
         $model = new ViewModel();
         $model->setTemplate('core/index/dashboard');
-        
-        $widgets = array();
-        $modules = $this->serviceLocator->get('ModuleManager')->getLoadedModules();
-        $widgets = array();
+        $modules = $this->moduleManager->getLoadedModules();
         foreach ($this->config('dashboard', array_keys($modules)) as $module => $cfg) {
             if (!isset($cfg['enabled']) || true !== $cfg['enabled']) {
                 continue;
@@ -118,12 +97,9 @@ class IndexController extends AbstractActionController
             
                 $viewModel->setTemplate('core/index/dashboard-widget.phtml');
                 $model->addChild($viewModel, "dashboard_{$module}_{$captureTo}");
-                //$widgets[] = $viewModel;
             }
         }
-        //$model->setVariable('widgets', $widgets);
         return $model;
-        
     }
     
     public function errorAction()

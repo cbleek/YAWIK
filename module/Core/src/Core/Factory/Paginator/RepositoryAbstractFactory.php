@@ -10,9 +10,10 @@
 /** */
 namespace Core\Factory\Paginator;
 
+use Core\Paginator\PaginatorService;
 use Interop\Container\ContainerInterface;
-use Zend\ServiceManager\AbstractFactoryInterface;
-use Zend\ServiceManager\MutableCreationOptionsInterface;
+use Zend\ServiceManager\Factory\AbstractFactoryInterface;
+//use Zend\ServiceManager\MutableCreationOptionsInterface;
 use Zend\ServiceManager\ServiceLocatorInterface;
 
 /**
@@ -49,17 +50,11 @@ use Zend\ServiceManager\ServiceLocatorInterface;
  *
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
  * @author Anthonius Munthi <me@itstoni.com>
+ * @TODO    [ZF3] fix remove implementation of MutableCreationOptionsInterface
  * @since 0.24
  */
-class RepositoryAbstractFactory implements AbstractFactoryInterface, MutableCreationOptionsInterface
+class RepositoryAbstractFactory implements AbstractFactoryInterface
 {
-    /**
-     * Creation options.
-     *
-     * @var array
-     */
-    protected $options = [];
-
     /**
      * Create a new Paginator instance
      *
@@ -73,29 +68,24 @@ class RepositoryAbstractFactory implements AbstractFactoryInterface, MutableCrea
         /**
          * @var $repositories \Core\Repository\RepositoryService
          * @var $filter       \Zend\Filter\FilterInterface
+         * @var $container PaginatorService
          */
-        $services     = $container->getServiceLocator();
-        $repositories = $services->get('repositories');
+        $repositories = $container->get('repositories');
         $queryBuilder = $repositories->createQueryBuilder();
 
         $queryBuilder->find($this->getEntityClassName($requestedName));
 
-        $filterManager = $services->get('FilterManager');
+        $filterManager = $container->get('FilterManager');
         $filterName    = 'PaginationQuery/' . $requestedName;
 
         if ($filterManager->has($filterName)) {
             $filter       = $filterManager->get('PaginationQuery/' . $requestedName);
-            $queryBuilder = $filter->filter($this->options, $queryBuilder);
+            $queryBuilder = $filter->filter($options, $queryBuilder);
         }
 
         $cursor    = $queryBuilder->getQuery()->execute();
         $adapter   = new \Core\Paginator\Adapter\DoctrineMongoCursor($cursor);
         $paginator = new \Zend\Paginator\Paginator($adapter);
-
-        // Clear creation options, because AbstractPluginManager does not call
-        // setCreationOptions() when no options are passed.
-        $this->setCreationOptions([]);
-
 
         return $paginator;
     }
@@ -113,39 +103,6 @@ class RepositoryAbstractFactory implements AbstractFactoryInterface, MutableCrea
         $class = $this->getEntityClassName($requestedName);
 
         return class_exists($class, true);
-    }
-
-    public function setCreationOptions(array $options)
-    {
-        $this->options = $options;
-    }
-
-    /**
-     * Determines if we can create a paginator instance with given $requestedName
-     *
-     * @param ServiceLocatorInterface   $serviceLocator
-     * @param string                    $name
-     * @param string                    $requestedName
-     *
-     * @return bool
-     */
-    public function canCreateServiceWithName(ServiceLocatorInterface $serviceLocator, $name, $requestedName)
-    {
-        return $this->canCreate($serviceLocator,$requestedName);
-    }
-
-    /**
-     * Create a paginator instance with given $requestedName service
-     *
-     * @param ServiceLocatorInterface $serviceLocator
-     * @param String                  $name
-     * @param String                  $requestedName
-     *
-     * @return \Zend\Paginator\Paginator
-     */
-    public function createServiceWithName(ServiceLocatorInterface $serviceLocator, $name, $requestedName)
-    {
-       return $this($serviceLocator,$requestedName);
     }
 
     /**

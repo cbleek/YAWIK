@@ -14,6 +14,8 @@
 namespace Core;
 
 use Core\Listener\AjaxRouteListener;
+use Zend\EventManager\Event;
+use Zend\ModuleManager\Feature\ConsoleUsageProviderInterface;
 use Zend\Mvc\MvcEvent;
 use Core\Listener\LanguageRouteListener;
 use Core\Listener\AjaxRenderListener;
@@ -34,7 +36,7 @@ use Doctrine\ODM\MongoDB\Types\Type as DoctrineType;
  * Bootstrap class of the Core module
  *
  */
-class Module implements ConsoleBannerProviderInterface
+class Module implements ConsoleBannerProviderInterface, ConsoleUsageProviderInterface
 {
     
     public function getConsoleBanner(Console $console)
@@ -49,7 +51,20 @@ class Module implements ConsoleBannerProviderInterface
             $name
         );
     }
-    
+
+    public function getConsoleUsage(Console $console)
+    {
+        return [
+            'purge [--no-check] [--options=] <entity> [<id>]'  => 'Purge entities',
+            'This command will load entities to be purged, checks the dependency of each and removes all entities completely from the',
+            'database. However, called with no <entity> and options it will output a list of all available entity loaders and its options.',
+            '',
+            ['--no-check', 'Skip the dependency check and remove all entities and dependencies straight away.'],
+            ['--options=STRING', 'JSON string represents options for the specific entity loader used.'],
+        ];
+    }
+
+
     /**
      * Sets up services on the bootstrap event.
      *
@@ -70,36 +85,22 @@ class Module implements ConsoleBannerProviderInterface
         }
         
         $sm = $e->getApplication()->getServiceManager();
-        $translator = $sm->get('translator'); // initialise translator!
+        $translator = $sm->get('translator'); // initialize translator!
         \Zend\Validator\AbstractValidator::setDefaultTranslator($translator);
         $eventManager        = $e->getApplication()->getEventManager();
         $sharedManager       = $eventManager->getSharedManager();
         
-        $tracyConfig = $sm->get('Config')['tracy'];
-        
-        if ($tracyConfig['enabled']) {
-            (new TracyService())->register($tracyConfig);
-            (new TracyListener())->attach($eventManager);
-        }
+        (new TracyService())->register($sm->get('Config')['tracy']);
+        (new TracyListener())->attach($eventManager);
         
         if (!\Zend\Console\Console::isConsole()) {
-            $redirectCallback = function () use ($e) {
-                $routeMatch = $e->getRouteMatch();
-                $lang = $routeMatch ? $routeMatch->getParam('lang', 'en') : 'en';
-                $uri    = $e->getRouter()->getBaseUrl() . '/' . $lang . '/error';
-                
-                header('Location: ' . $uri);
-            };
-            
-            if (!$tracyConfig['enabled']) {
-                $errorHandlerListener = new ErrorHandlerListener($sm->get('ErrorLogger'), $redirectCallback);
-                $errorHandlerListener->attach($eventManager);
-            }
+            (new ErrorHandlerListener())->attach($eventManager);
 
             /* @var \Core\Options\ModuleOptions $options */
-            $languageRouteListener = new LanguageRouteListener($sm->get('Core/Locale'));
+            $languageRouteListener = new LanguageRouteListener(
+                $sm->get('Core/Locale'),$sm->get('Core/Options')
+            );
             $languageRouteListener->attach($eventManager);
-        
         
             $ajaxRenderListener = new AjaxRenderListener();
             $ajaxRenderListener->attach($eventManager);
@@ -115,7 +116,6 @@ class Module implements ConsoleBannerProviderInterface
         
             $stringListener = new StringListener();
             $stringListener->attach($eventManager);
-
         }
 
         $notificationListener = $sm->get('Core/Listener/Notification');
@@ -128,14 +128,16 @@ class Module implements ConsoleBannerProviderInterface
         $eventManager->attach(
             MvcEvent::EVENT_DISPATCH_ERROR,
             function ($event) {
-                $application = $event->getApplication();
-                if ($application::ERROR_EXCEPTION == $event->getError()) {
-                    $ex = $event->getParam('exception');
-                    if (404 == $ex->getCode()) {
-                        $event->setError($application::ERROR_CONTROLLER_NOT_FOUND);
-                    }
-                }
-            
+            	if($event instanceof MvcEvent){
+		            $application = $event->getApplication();
+		            
+		            if ($application::ERROR_EXCEPTION == $event->getError()) {
+			            $ex = $event->getParam('exception');
+			            if (404 == $ex->getCode()) {
+				            $event->setError($application::ERROR_CONTROLLER_NOT_FOUND);
+			            }
+		            }
+	            }
             },
             500
         );

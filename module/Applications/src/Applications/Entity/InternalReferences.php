@@ -21,7 +21,7 @@ use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
 class InternalReferences extends AbstractEntity
 {
     
-    /** @ODM\Hash */
+    /** @ODM\Field(type="hash") */
     protected $jobs = array();
     
     public function setJob(JobInterface $job)
@@ -32,7 +32,7 @@ class InternalReferences extends AbstractEntity
         
         $this->jobs = array(
             '__id__' => $job->getId(),
-            'userId' => $job->getUser()->getId(),
+            'userId' => ($user = $job->getUser()) ? $user->getId() : null,
         );
         return $this;
     }

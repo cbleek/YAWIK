@@ -12,13 +12,13 @@ namespace Organizations\Factory\Controller\Plugin;
 
 use Interop\Container\ContainerInterface;
 use Organizations\Controller\Plugin\AcceptInvitationHandler;
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
 
 /**
  * Factory for an InvitationHandler.
  *
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
+ * @author Anthonius Munthi <me@itstoni.com>
  * @since  0.19
  */
 class AcceptInvitationHandlerFactory implements FactoryInterface
@@ -46,18 +46,5 @@ class AcceptInvitationHandlerFactory implements FactoryInterface
                ->setAuthenticationService($authenticationService);
 
         return $plugin;
-    }
-
-    /**
-     * Creates an AcceptInvitationHandler
-     *
-     * @param ServiceLocatorInterface $serviceLocator
-     *
-     * @return AcceptInvitationHandler
-     */
-    public function createService(ServiceLocatorInterface $serviceLocator)
-    {
-        /* @var $serviceLocator \Zend\Mvc\Controller\PluginManager */
-        return $this($serviceLocator->getServiceLocator(), AcceptInvitationHandler::class);
     }
 }

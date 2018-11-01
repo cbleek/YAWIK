@@ -10,45 +10,23 @@
 /** */
 namespace Core\EventManager;
 
-use Zend\EventManager\Event;
 use Zend\EventManager\EventInterface;
 use Zend\EventManager\EventManager as ZfEventManager;
-use Zend\EventManager\Exception;
 
 /**
- * EventPrototype Aware EventManager implementation.
+ * EventManager extension which allows creating event instances.
  *
- * @internal
- *      Will be obsolete with ZF3 as ZF3s' EventManager implementation is
- *      already event prototype aware.
- * 
+ * Also allows calling of trigger() and triggerUntil() with event instances.
+ *
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
  * @since 0.25
+ * @since 0.30 - ZF3 compatibility
  */
 class EventManager extends ZfEventManager implements EventProviderInterface
 {
 
-    /**
-     * The event prototype.
-     *
-     * @var EventInterface
-     */
-    protected $eventPrototype;
-
-    public function setEventPrototype(EventInterface $event)
-    {
-        $this->eventPrototype = $event;
-        $this->setEventClass(get_class($event));
-
-        return $this;
-    }
-
     public function getEvent($name = null, $target = null, $params = null)
     {
-        if (!$this->eventPrototype) {
-            $this->setEventPrototype(new Event());
-        }
-
         $event = clone $this->eventPrototype;
 
         if (is_array($name)) {
@@ -76,24 +54,45 @@ class EventManager extends ZfEventManager implements EventProviderInterface
 
         return $event;
     }
-
-    public function trigger($event, $target = null, $argv = [], $callback = null)
+	
+	/**
+	 * Trigger an event.
+     *
+     * If no event instance is passed, it creates one prior to triggering.
+     *
+     * @param EventInterface|string $eventName
+     * @param object|string|null $target
+     * @param array $argv
+     *
+     * @return \Zend\EventManager\ResponseCollection
+	 */
+    public function trigger($eventName, $target = null, $argv = [])
     {
-        if (!$event instanceOf EventInterface
-            && !$target instanceOf EventInterface
-            && !$argv instanceOf EventInterface
-        ) {
-            /*
-             * Create the event from the prototype, and not
-             * from eventClass as the parent implementation does.
-             */
-            $e = $this->getEvent($event, $target, $argv);
+        $event = $eventName instanceOf EventInterface
+            ? $eventName
+            : $this->getEvent($eventName, $target, $argv);
 
-            return parent::trigger($e, $callback);
-        }
-
-        return parent::trigger($event, $target, $argv, $callback);
+        return $this->triggerListeners($event);
     }
 
+    /**
+     * Trigger an event, applying a callback to each listener's result
+     *
+     * If no event instance is passed, it creates one prior to triggering.
+     *
+     * @param callable $callback
+     * @param EventInterface|string   $eventName
+     * @param object|string|null     $target
+     * @param array    $argv
+     *
+     * @return \Zend\EventManager\ResponseCollection
+     */
+    public function triggerUntil(callable $callback, $eventName, $target = null, $argv = [])
+    {
+        $event = $eventName instanceOf EventInterface
+            ? $eventName
+            : $this->getEvent($eventName, $target, $argv);
 
+        return $this->triggerListeners($event, $callback);
+    }
 }

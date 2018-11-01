@@ -12,9 +12,12 @@
  */
 namespace Applications\Repository;
 
+use Auth\AuthenticationService;
 use Core\Repository\AbstractRepository;
 use Applications\Entity\Application as ApplicationEntity;
 use Applications\Entity\CommentInterface;
+use Doctrine\ODM\MongoDB as ODM;
+use Interop\Container\ContainerInterface;
 use Zend\Stdlib\ArrayUtils;
 use Auth\Entity\UserInterface;
 
@@ -27,7 +30,6 @@ use Auth\Entity\UserInterface;
  */
 class Application extends AbstractRepository
 {
-   
     /**
      * {@inheritDoc}
      */
@@ -86,7 +88,7 @@ class Application extends AbstractRepository
      */
     protected function getPaginationQueryBuilder($params)
     {
-        $filter = $this->getService('filterManager')->get('PaginationQuery/Applications');
+        $filter = $this->getService('FilterManager')->get('PaginationQuery/Applications');
         $qb = $filter->filter($params, $this->createQueryBuilder());
         
         return $qb;
@@ -187,7 +189,7 @@ class Application extends AbstractRepository
         $qb = $this->createQueryBuilder();
         $qb->hydrate(false)->distinct('status.name');
         $result = $qb->getQuery()->execute();
-        return $result;
+        return $result->toArray();
     }
 
     /**

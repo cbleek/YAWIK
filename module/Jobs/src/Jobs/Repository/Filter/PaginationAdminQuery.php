@@ -40,16 +40,15 @@ class PaginationAdminQuery extends AbstractPaginationQuery
 
         if (isset($params['text']) && !empty($params['text'])) {
             $search = strtolower($params['text']);
-            $expression = $queryBuilder->expr()->operator('$text', ['$search' => $search]);
-            $queryBuilder->field(null)->equals($expression->getQuery());
+            $queryBuilder->text($search);
         }
 
         $queryBuilder->field('isDraft')->equals(false);
 
-        if (isset($params['statusselect']) &&
-            !empty($params['statusselect'])) {
-            if ($params['statusselect'] != 'all') {
-                $queryBuilder->field('status.name')->equals($params['statusselect']);
+        if (isset($params['status']) &&
+            !empty($params['status'])) {
+            if ($params['status'] != 'all') {
+                $queryBuilder->field('status.name')->equals($params['status']);
             }
         }
 
@@ -63,6 +62,7 @@ class PaginationAdminQuery extends AbstractPaginationQuery
                 $queryBuilder->sort($this->filterSort($sort));
             }
         }
+        $queryBuilder->sort('datePublishStart.date', -1);
         return $queryBuilder;
     }
 }

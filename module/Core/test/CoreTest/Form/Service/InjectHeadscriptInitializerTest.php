@@ -11,12 +11,15 @@
 namespace CoreTest\Form\Service;
 
 use Core\Form\Service\InjectHeadscriptInitializer;
+use Zend\ServiceManager\Initializer\InitializerInterface;
 
 /**
  * Tests for InjectHeadscriptInitializer
  *
  * @covers \Core\Form\Service\InjectHeadscriptInitializer
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
+ * @author Anthonius Munthi <me@itstoni.com>
+ *
  * @group Core
  * @group Core.Form
  * @group Core.Form.Service
@@ -57,7 +60,7 @@ class InjectHeadscriptInitializerTest extends \PHPUnit_Framework_TestCase
      */
     public function testImplementsInitializerInterface()
     {
-        $this->assertInstanceOf('\Zend\ServiceManager\InitializerInterface', $this->target);
+        $this->assertInstanceOf(InitializerInterface::class, $this->target);
     }
 
     /**
@@ -120,14 +123,15 @@ class InjectHeadscriptInitializerTest extends \PHPUnit_Framework_TestCase
                 ->withConsecutive(array('basepath'), array('headscript'))
                 ->will($this->onConsecutiveCalls($basepath, $headscript));
 
-        $services = $this->getMockBuilder('\Zend\ServiceManager\ServiceManager')
-                         ->disableOriginalConstructor()
-                         ->getMock();
+        $services = $this->formElementManagerMock;
 
-        $services->expects($this->exactly(1))->method('get')->with('ViewHelperManager')->willReturn($helpers);
-        $this->formElementManagerMock->expects($this->once())->method('getServiceLocator')->willReturn($services);
+        $services->expects($this->exactly(1))
+                 ->method('get')
+                 ->with('ViewHelperManager')
+                 ->willReturn($helpers)
+        ;
 
-        $this->target->initialize($instance, $this->formElementManagerMock);
+        $this->target->initialize($instance, $services);
     }
 
 

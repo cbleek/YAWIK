@@ -24,6 +24,29 @@ return array(
                         ),
                         'may_terminate' => true,
                         'child_routes' => array(
+                            'profileDetail' => [
+                                'type' => 'Segment',
+                                'options' => [
+                                    'route' => '/profile[/:id]',
+                                    'constraints' => [
+                                        'id' => '\w+',
+                                    ],
+                                    'defaults' => [
+                                        'action' => 'detail',
+                                        'controller' => 'Organizations/Profile'
+                                    ],
+                                ],
+                            ],
+                            'profile' => [
+                                'type' => 'Segment',
+                                'options' => [
+                                    'route' => '/profile',
+                                    'defaults' => [
+                                        'action' => 'index',
+                                        'controller' => 'Organizations/Profile'
+                                    ],
+                                ],
+                            ],
                             'detail' => array(
                                 'type' => 'Segment',
                                 'options' => array(
@@ -76,16 +99,6 @@ return array(
                                     ),
                                     'defaults' => array(
                                         'action' => 'edit',
-                                    ),
-                                ),
-                            ),
-                            'typeahead' => array(
-                                'type' => 'Segment',
-                                'options' => array(
-                                    'route' => '/typeahead',
-                                    'defaults' => array(
-                                        'controller' => 'Organizations/TypeAHead',
-                                        'action' => 'index',
                                     ),
                                 ),
                             ),

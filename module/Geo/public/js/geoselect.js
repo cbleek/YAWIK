@@ -65,7 +65,7 @@
                     };
                 },
                 processResults: function(data, params) {
-                    console.debug('results:', data);
+                    console.debug('processResults: results:', data);
                     console.debug($.map(data.items, function(item) { return {id: JSON.stringify(item), data: item}; }));
                     //params.page = params.page || 1;
                     return {
@@ -83,11 +83,23 @@
 
         var initialValue = $node.data('val');
 
-        if (initialValue) {
-            var $option = $('<option selected>Test</option>');
-            $option.val($node.attr('data-val'));
-            $option.text(formatSelection({id: $node.attr('data-val'), data: initialValue}));
-            $node.prepend($option);
+
+
+        if (!initialValue) {
+            initialValue = [];
+        } else if (!$.isArray(initialValue)) {
+            initialValue = [initialValue];
+        }
+
+        console.debug(initialValue);
+        if (initialValue.length) {
+            for (var i=initialValue.length-1; i>=0; i-=1) {
+                console.debug("initVal " + i + ": "+ initialValue[i]);
+                var $option = $('<option selected>Test</option>');
+                $option.val(initialValue[i]);
+                $option.text(formatSelection({id: initialValue[i], data: JSON.parse(initialValue[i])}));
+                $node.prepend($option);
+            }
             $node.trigger('change');
         }
         

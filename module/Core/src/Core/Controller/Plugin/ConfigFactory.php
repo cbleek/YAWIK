@@ -2,25 +2,22 @@
 
 namespace Core\Controller\Plugin;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
-use Settings\Repository\Settings;
-use Zend\Mvc\MvcEvent;
-use Zend\EventManager\EventManager;
+use Interop\Container\ContainerInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
 
+/**
+ * Create new Config plugin
+ *
+ * @package Core\Controller\Plugin
+ * @author Anthonius Munthi <me@itstoni.com>
+ */
 class ConfigFactory implements FactoryInterface
 {
-    /**
-     * Create the settings service
-     *
-     * @param  ServiceLocatorInterface $serviceLocator
-     * @return ControllerManager
-     */
-    public function createService(ServiceLocatorInterface $serviceLocator)
-    {
-        $config = $serviceLocator->getServiceLocator()->get('Config');
-        $plugin = new Config($config);
-
-        return $plugin;
-    }
+	public function __invoke( ContainerInterface $container, $requestedName, array $options = null )
+	{
+		$config = $container->get('Config');
+		$plugin = new Config($config);
+		
+		return $plugin;
+	}
 }

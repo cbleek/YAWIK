@@ -10,6 +10,7 @@
 /** */
 namespace Core\Controller;
 
+use Core\EventManager\EventManager;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
 
@@ -17,11 +18,20 @@ use Zend\View\Model\ViewModel;
  * Admin Dashboard controller.
  * 
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
+ * @author Anthonius Munthi <me@itstoni.com>
+ *
  * @since 0.25
  */
 class AdminController extends AbstractActionController
 {
-
+	
+    protected $adminControllerEvents;
+    
+    public function __construct(EventManager $eventManager)
+    {
+        $this->adminControllerEvents = $eventManager;
+    }
+    
     /**
      * Controls the admin dashboard page.
      *
@@ -31,9 +41,9 @@ class AdminController extends AbstractActionController
     {
         /* @var \Core\EventManager\EventManager $events
          * @var AdminControllerEvent $event */
-        $events = $this->serviceLocator->get('Core/AdminController/Events');
+        $events = $this->adminControllerEvents;
         $event  = $events->getEvent(AdminControllerEvent::EVENT_DASHBOARD, $this);
-        $events->trigger($event);
+        $events->trigger($event,$this);
 
         $model = new ViewModel();
         $widgets = [];

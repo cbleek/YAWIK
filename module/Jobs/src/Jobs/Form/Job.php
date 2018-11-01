@@ -60,7 +60,10 @@ class Job extends WizardContainer
         $elements = [
             'general' => [
                 'priority' => 100,
-                'options' => [ 'label' => 'Basic Data' ],
+                'label' => /*@translate*/ 'Basic Data',
+                'options' => [
+                	'label' => /*@translate*/ 'Basic Data'
+                ],
                 'property' => true,
                 'forms' => [
 
@@ -104,7 +107,7 @@ class Job extends WizardContainer
                         'property' => true,
                         'options' => [
                             'enable_descriptions' => true,
-                            'description' => /*@translate*/ 'If there si something you want us to know about this job offering, you can type it here.',
+                            'description' => /*@translate*/ 'If there is something you want us to know about this job offering, you can type it here.',
                             'display_mode' => 'summary'
                         ]
                     ]
@@ -113,7 +116,7 @@ class Job extends WizardContainer
 
             'description' => [
                 'priority' => '80',
-                'options' => [ 'label' => 'Job opening' ],
+                'options' => [ 'label' => /*@translate*/ 'Create job opening' ],
                 'property' => true,
                 'forms' => [
                     'descriptionForm' => array(
@@ -125,7 +128,7 @@ class Job extends WizardContainer
 
             'preview' => [
                 'priority' => 60,
-                'options' => [ 'label' => 'Preview' ],
+                'options' => [ 'label' => /*@translate*/ 'Preview' ],
                 'property' => true,
                 'forms' => [
                     'previewForm' => array(

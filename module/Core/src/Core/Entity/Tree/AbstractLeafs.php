@@ -33,7 +33,7 @@ abstract class AbstractLeafs implements LeafsInterface
     /**
      * The leafs.
      *
-     * @ODM\ReferenceMany(discriminatorField="_entity", storeAs="dbRef", strategy="set", sort={"priority"="asc"})
+     * @ODM\ReferenceMany(discriminatorField="_entity", storeAs="dbRef", strategy="set", sort={"priority"="asc"}, cascade={"persist"})
      * @var Collection
      */
     private $items;
@@ -43,7 +43,7 @@ abstract class AbstractLeafs implements LeafsInterface
      *
      * To make the attached leafs searchable via mongo queries.
      *
-     * @ODM\Collection
+     * @ODM\Field(type="collection")
      * @var array
      */
     private $values;
@@ -86,7 +86,9 @@ abstract class AbstractLeafs implements LeafsInterface
         $values = [];
         /* @var NodeInterface $item */
         foreach ($this->getItems() as $item) {
-            $values[] = $item->getValueWithParents();
+        	if(!is_null($item)){
+		        $values[] = $item->getValueWithParents();
+	        }
         }
 
         $this->values = $values;

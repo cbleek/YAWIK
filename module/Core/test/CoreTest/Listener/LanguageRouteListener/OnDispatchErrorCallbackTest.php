@@ -10,13 +10,14 @@
 /** */
 namespace CoreTest\Listener\LanguageRouteListener;
 
+use Core\Options\ModuleOptions;
 use CoreTestUtils\TestCase\SetupTargetTrait;
 use Core\Listener\LanguageRouteListener;
 use Zend\Http\PhpEnvironment\Response;
 use Zend\Mvc\Application;
 use Zend\Mvc\MvcEvent;
-use Zend\Mvc\Router\RouteMatch;
-use Zend\Mvc\Router\RouteStackInterface;
+use Zend\Router\Http\RouteMatch;
+use Zend\Router\RouteStackInterface;
 use Core\I18n\Locale as LocaleService;
 
 /**
@@ -36,10 +37,15 @@ class OnDispatchErrorCallbackTest extends \PHPUnit_Framework_TestCase
     private $target = [
         LanguageRouteListener::class,
         'mock' => [ 'detectLanguage' => ['return' => 'xx'], 'setLocale', 'isSupportedLanguage', 'redirect'],
-        'args' => 'getLocaleService'
+        'args' => 'getConstructorArgs'
     ];
 
-   public function testHandleConsoleRequests()
+    /**
+     * @var ModuleOptions
+     */
+    private $moduleOptions;
+
+    public function testHandleConsoleRequests()
    {
        $event = $this
            ->getMockBuilder(MvcEvent::class)
@@ -127,7 +133,10 @@ class OnDispatchErrorCallbackTest extends \PHPUnit_Framework_TestCase
     {
         $event = $this->getEventMock('/base/uri', '/see/no/lang');
 
-        $event->expects($this->once())->method('stopPropagation')->with(true);
+        $event->expects($this->once())
+              ->method('stopPropagation')
+              ->with(true)
+        ;
         $response = new Response();
         $event->setResponse($response);
         $routeMatch = new RouteMatch([]);
@@ -140,10 +149,18 @@ class OnDispatchErrorCallbackTest extends \PHPUnit_Framework_TestCase
                     return true;
                 }
               ))
-            ->willReturn($routeMatch);
+            ->willReturn($routeMatch)
+        ;
 
-        $this->target->expects($this->once())->method('redirect')->with($response, '/base/uri/xx/see/no/lang');
-        $this->target->expects($this->never())->method('setLocale');
+        $this->target
+	        ->expects($this->once())
+	        ->method('redirect')
+	        ->with($response, '/base/uri/xx/see/no/lang')
+        ;
+        $this->target
+	        ->expects($this->never())
+	        ->method('setLocale')
+        ;
 
         $this->target->onDispatchError($event);
     }
@@ -172,11 +189,51 @@ class OnDispatchErrorCallbackTest extends \PHPUnit_Framework_TestCase
         $this->target->onDispatchError($event);
 
     }
-    
-    public function getLocaleService()
+
+    public function testHandleWhenDetectLanguageDisabled()
     {
-        return [new LocaleService([])];
+        $event = $this->getEventMock('/base/uri', '/see/no/lang');
+
+        $event->expects($this->once())
+            ->method('stopPropagation')
+            ->with(true)
+        ;
+        $response = new Response();
+        $event->setResponse($response);
+
+        $routeMatch = new RouteMatch([]);
+        $this->router
+            ->expects($this->once())
+            ->method('match')
+            ->with($this->callback(
+                function($v) {
+                    \PHPUnit_Framework_Assert::assertEquals('/base/uri/default/see/no/lang', (string) $v->getUri());
+                    return true;
+                }
+            ))
+            ->willReturn($routeMatch)
+        ;
+
+
+        $target = $this->target;
+        $this->moduleOptions->setDefaultLanguage('default');
+        $this->moduleOptions->setDetectLanguage(false);
+
+        $target->expects($this->once())
+            ->method('redirect')
+            ->with($response,'/base/uri/default/see/no/lang')
+        ;
+
+        $target->onDispatchError($event);
     }
+
+    public function getConstructorArgs()
+    {
+        $this->moduleOptions = new ModuleOptions();
+        return [new LocaleService([]),$this->moduleOptions];
+    }
+
+
 }
 
 

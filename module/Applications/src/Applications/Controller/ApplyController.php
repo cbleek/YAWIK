@@ -12,6 +12,8 @@ namespace Applications\Controller;
 
 use Applications\Entity\Contact;
 use Applications\Listener\Events\ApplicationEvent;
+use Core\Factory\ContainerAwareInterface;
+use Interop\Container\ContainerInterface;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\Mvc\MvcEvent;
 use Applications\Entity\Application;
@@ -41,22 +43,54 @@ use Applications\Entity\Status;
  * @method \Auth\Controller\Plugin\Auth auth()
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
  */
-class ApplyController extends AbstractActionController
+class ApplyController extends AbstractActionController implements ContainerAwareInterface
 {
     
-    protected $container;
+    protected $formContainer;
     
-    public function attachDefaultListeners()
+    protected $config;
+    
+    protected $imageCacheManager;
+    
+    protected $validator;
+    
+    protected $repositories;
+    
+    protected $appEvents;
+    
+    protected $viewHelper;
+	
+	/**
+	 * @param ContainerInterface $container
+	 *
+	 * @return ApplyController
+	 */
+    static public function factory(ContainerInterface $container)
     {
-        parent::attachDefaultListeners();
-        $events = $this->getEventManager();
-        $events->attach(MvcEvent::EVENT_DISPATCH, array($this, 'preDispatch'), 10);
-        $serviceLocator  = $this->serviceLocator;
-        $defaultServices = $serviceLocator->get('DefaultListeners');
-        $events->attach($defaultServices);
-        return $this;
+        $ob = new self();
+        $ob->setContainer($container);
+        return $ob;
     }
-    
+	
+	public function setContainer( ContainerInterface $container )
+	{
+		$this->config            = $container->get('Config');
+		$this->imageCacheManager = $container->get('Organizations\ImageFileCache\Manager');
+		$this->validator         = $container->get('ValidatorManager');
+		$this->repositories      = $container->get('repositories');
+		$this->appEvents         = $container->get('Applications/Events');
+		$this->viewHelper        = $container->get('ViewHelperManager');
+	}
+	
+	
+	public function attachDefaultListeners()
+	{
+		parent::attachDefaultListeners();
+		$events = $this->getEventManager();
+		$events->attach(MvcEvent::EVENT_DISPATCH, array($this, 'preDispatch'), 10);
+		return $this;
+	}
+	
     public function preDispatch(MvcEvent $e)
     {
         /* @var $application \Applications\Entity\Application */
@@ -69,7 +103,7 @@ class ApplyController extends AbstractActionController
         /* @var $repository \Applications\Repository\Application */
         /* @var $container  \Applications\Form\Apply */
         $request      = $this->getRequest();
-        $services     = $this->serviceLocator;
+        $services     = $e->getApplication()->getServiceManager();
         $repositories = $services->get('repositories');
         $repository   = $repositories->get('Applications/Application');
         $container    = $services->get('forms')->get('Applications/Apply');
@@ -175,7 +209,7 @@ class ApplyController extends AbstractActionController
         
         $container->setEntity($application);
         $this->configureContainer($container);
-        $this->container = $container;
+        $this->formContainer     = $container;
     }
     
     public function jobNotFoundAction()
@@ -191,12 +225,12 @@ class ApplyController extends AbstractActionController
     public function indexAction()
     {
         /* @var \Applications\Form\Apply $form */
-        $form        = $this->container;
+        $form        = $this->formContainer;
         $application = $form->getEntity(); /* @var \Applications\Entity\Application $application */
         
         $form->setParam('applicationId', $application->getId());
 
-        $organizationImageCache = $this->serviceLocator->get('Organizations\ImageFileCache\Manager');
+        $organizationImageCache = $this->imageCacheManager;
 
         $model = new ViewModel(
             [
@@ -213,7 +247,7 @@ class ApplyController extends AbstractActionController
     public function oneClickApplyAction()
     {
         /* @var \Applications\Entity\Application $application */
-        $application = $this->container->getEntity();
+        $application = $this->formContainer->getEntity();
         $job = $application->getJob();
         $atsMode = $job->getAtsMode();
         
@@ -227,7 +261,7 @@ class ApplyController extends AbstractActionController
         
         $network = $this->params('network');
 
-        $hybridAuth = $this->serviceLocator
+        $hybridAuth = $this->formContainer
             ->get('HybridAuthAdapter')
             ->getHybridAuth();
         /* @var $authProfile \Hybrid_User_Profile */
@@ -295,13 +329,13 @@ class ApplyController extends AbstractActionController
     
     public function processAction()
     {
-        $formName  = $this->params()->fromQuery('form');
-        $form      = $this->container->getForm($formName);
-        $postData  = $form->getOption('use_post_array') ? $_POST : array();
-        $filesData = $form->getOption('use_files_array') ? $_FILES : array();
-        $data      = array_merge($postData, $filesData);
-
-        $form->setData($data);
+    	$params = $this->params();
+        $formName  = $params->fromQuery('form');
+        $form      = $this->formContainer->getForm($formName);
+        $postData  = $form->getOption('use_post_array') ? $params->fromPost() : array();
+	    //@TODO: [ZF3] option use_files_array is false by default
+        //$filesData = $form->getOption('use_files_array') ? $params->fromFiles() : array();
+        $form->setData(array_merge($postData,$_FILES));
         
         if (!$form->isValid()) {
             return new JsonModel(
@@ -311,37 +345,37 @@ class ApplyController extends AbstractActionController
                 )
             );
         }
-        $application = $this->container->getEntity();
-        $this->serviceLocator->get('repositories')->store($application);
+        $application = $this->formContainer->getEntity();
+        $this->repositories->store($application);
         
-        if ('file-uri' === $this->params()->fromPost('return')) {
-            $basepath = $this->serviceLocator->get('ViewHelperManager')->get('basepath');
+        if ('file-uri' === $params->fromPost('return')) {
+            $basepath = $this->viewHelper->get('basepath');
             $content = $basepath($form->getHydrator()->getLastUploadedFile()->getUri());
         } else {
             if ($form instanceof SummaryForm) {
                 $form->setRenderMode(SummaryForm::RENDER_SUMMARY);
-                $viewHelper = 'summaryform';
+                $viewHelper = 'summaryForm';
             } else {
                 $viewHelper = 'form';
             }
-            $content = $this->serviceLocator->get('ViewHelperManager')->get($viewHelper)->__invoke($form);
+            $content = $this->viewHelper->get($viewHelper)->__invoke($form);
         }
         
         return new JsonModel(
             array(
-            'valid' => $form->isValid(),
-            'content' => $content,
-            'isApplicationValid' => $this->checkApplication($application)
+	            'valid' => $form->isValid(),
+	            'content' => $content,
+	            'isApplicationValid' => $this->checkApplication($application)
             )
         );
     }
     
     public function doAction()
     {
-        $services     = $this->serviceLocator;
-        $config       = $services->get('Config');
-        $repositories = $services->get('repositories');
+        $config       = $this->config;
+        $repositories = $this->repositories;
         $repository   = $repositories->get('Applications/Application');
+        $organizationImageCache = $this->imageCacheManager;
         /* @var Application $application*/
         $application  = $repository->findDraft(
             $this->auth()->getUser(),
@@ -383,6 +417,7 @@ class ApplyController extends AbstractActionController
             //$this->notification()->success(/*@translate*/ 'Application has been send.');
             $model = new ViewModel(
                 array(
+                'organizationImageCache' =>  $organizationImageCache,
                 'success' => true,
                 'job' => $jobEntity,
                 )
@@ -399,13 +434,14 @@ class ApplyController extends AbstractActionController
 
         $repositories->store($application);
         
-        $events   = $services->get('Applications/Events');
+        $events   = $this->appEvents;
         $events->trigger(ApplicationEvent::EVENT_APPLICATION_POST_CREATE, $this, [ 'application' => $application ]);
 
         $model = new ViewModel(
             array(
             'success' => true,
             'application' => $application,
+            'organizationImageCache' =>  $organizationImageCache,
             )
         );
         $model->setTemplate('applications/apply/index');
@@ -415,7 +451,7 @@ class ApplyController extends AbstractActionController
 
     protected function checkApplication($application)
     {
-        return $this->serviceLocator->get('validatormanager')->get('Applications/Application')
+        return $this->validator->get('Applications/Application')
                     ->isValid($application);
     }
 
@@ -433,15 +469,15 @@ class ApplyController extends AbstractActionController
         $job         = $application->getJob();
 
         /** @var $settings \Applications\Entity\Settings */
-        $settings = $job->getUser()->getSettings('Applications');
-        $formSettings = $settings->getApplyFormSettings();
+        $settings = ($user = $job->getUser()) ? $user->getSettings('Applications') : null;
+        $formSettings = $settings ? $settings->getApplyFormSettings() : null;
 
         if ($formSettings && $formSettings->isActive()) {
             $container->disableElements($formSettings->getDisableElements());
             return;
         }
 
-        $config = $this->serviceLocator->get('Config');
+        $config = $this->config;
         $config = isset($config['form_elements_config']['Applications/Apply']['disable_elements'])
                 ? $config['form_elements_config']['Applications/Apply']['disable_elements']
                 : null;

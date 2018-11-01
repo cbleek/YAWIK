@@ -42,6 +42,8 @@ abstract class AbstractRepository extends ODM\DocumentRepository implements Repo
      */
     public function getService($name)
     {
+    	/* @TODO: [ZF3] ->getServiceLocator() should be removed in future */
+    	$config = $this->dm->getConfiguration();
         return $this->dm->getConfiguration()->getServiceLocator()->get($name);
     }
 
@@ -120,11 +122,13 @@ abstract class AbstractRepository extends ODM\DocumentRepository implements Repo
         return $this;
     }
 
-    public function remove($entity)
+    public function remove($entity,$flush=false)
     {
         $this->checkEntityType($entity);
         $this->dm->remove($entity);
-
+		if($flush){
+			$this->dm->flush($entity);
+		}
         return $this;
     }
 

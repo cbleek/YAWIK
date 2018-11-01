@@ -48,12 +48,10 @@ return [
 
 
     'controllers' => [
-        'invokables' => [
-            'Organizations/InviteEmployee' => 'Organizations\Controller\InviteEmployeeController',
-        ],
         'factories' => [
-            'Organizations/TypeAHead' => 'Organizations\Factory\Controller\TypeAHeadControllerFactory',
+	        'Organizations/InviteEmployee' => \Organizations\Factory\Controller\InviteEmployeeControllerFactory::class,
             'Organizations/Index' => 'Organizations\Factory\Controller\IndexControllerFactory',
+            'Organizations/Profile' => 'Organizations\Factory\Controller\ProfileControllerFactory'
         ]
     ],
 
@@ -75,7 +73,8 @@ return [
              'organizations/error/no-parent' => __DIR__ . '/../view/error/no-parent.phtml',
              'organizations/error/invite' => __DIR__ . '/../view/error/invite.phtml',
              'organizations/mail/invite-employee' => __DIR__ . '/../view/mail/invite-employee.phtml',
-            'organizations/form/workflow-fieldset' => __DIR__ . '/../view/form/workflow-fieldset.phtml',
+             'organizations/form/workflow-fieldset' => __DIR__ . '/../view/form/workflow-fieldset.phtml',
+            'organizations/profile/disabled' => __DIR__ . '/../view/organizations/profile/disabled.phtml',
         ],
         // Where to look for view templates not mapped above
         'template_path_stack' => [
@@ -84,12 +83,11 @@ return [
     ],
     'form_elements' => [
         'invokables' => [
-             'Organizations/form' => 'Organizations\Form\Organizations',
+             'Organizations/Form' => 'Organizations\Form\Organizations',
              'Organizations/OrganizationsContactForm'     => 'Organizations\Form\OrganizationsContactForm',
              'Organizations/OrganizationsNameForm'        => 'Organizations\Form\OrganizationsNameForm',
              'Organizations/OrganizationsDescriptionForm' => 'Organizations\Form\OrganizationsDescriptionForm',
              'Organizations/OrganizationsContactFieldset' => 'Organizations\Form\OrganizationsContactFieldset',
-             'Organizations/OrganizationsNameFieldset'    => 'Organizations\Form\OrganizationsNameFieldset',
              'Organizations/OrganizationsDescriptionFieldset' => 'Organizations\Form\OrganizationsDescriptionFieldset',
              //'Organizations/OrganizationFieldset'       => 'Organizations\Form\OrganizationFieldset',
              'Organizations/EmployeesContainer'           => 'Organizations\Form\EmployeesContainer',
@@ -98,10 +96,12 @@ return [
              'Organizations/Employee'                     => 'Organizations\Form\Element\Employee',
              'Organizations/WorkflowSettings'             => 'Organizations\Form\WorkflowSettings',
              'Organizations/WorkflowSettingsFieldset'     => 'Organizations\Form\WorkflowSettingsFieldset',
-
+             'Organizations/Profile'                      => \Organizations\Form\OrganizationsProfileForm::class,
+             'Organizations/ProfileFieldset'              => \Organizations\Form\OrganizationsProfileFieldset::class
         ],
         'factories' => [
-            'Organizations/Image' => 'Organizations\Form\LogoImageFactory',
+	        'Organizations/OrganizationsNameFieldset'    => \Organizations\Factory\Form\OrganizationsNameFieldsetFactory::class,
+            'Organizations/Image'                        => \Organizations\Form\LogoImageFactory::class,
             'Organizations/EmployeesFieldset'            => 'Organizations\Factory\Form\EmployeesFieldsetFactory',
             'Organizations/EmployeeFieldset'             => 'Organizations\Factory\Form\EmployeeFieldsetFactory',
         ]
@@ -114,28 +114,35 @@ return [
             ],
         ],
     ],
+
     'input_filters' => [
         'invokables' => [
         ],
     ],
+
     'filters' => [
         'factories' => [
-            'Organizations/PaginationQuery' => '\Organizations\Repository\Filter\PaginationQueryFactory'
+            'Organizations/PaginationQuery' => '\Organizations\Repository\Filter\PaginationQueryFactory',
+            \Organizations\Repository\Filter\ListJobQuery::class => \Zend\ServiceManager\Factory\InvokableFactory::class,
         ],
         'aliases' => [
-            'PaginationQuery/Organizations/Organization' => 'Organizations/PaginationQuery'
+            'PaginationQuery/Organizations/Organization' => 'Organizations/PaginationQuery',
+            'Organizations/ListJobQuery' => \Organizations\Repository\Filter\ListJobQuery::class
         ]
     ],
+
     'validators' => [
         'factories' => [
         ],
     ],
+
     'hydrators' => [
         'factories' => [
             'Hydrator\Organization' => 'Organizations\Entity\Hydrator\OrganizationHydratorFactory',
             'Organizations/Logo' => \Organizations\Factory\Entity\Hydrator\LogoHydratorFactory::class,
         ],
     ],
+
     'mails' => [
         'factories' => [
             'Organizations/InviteEmployee' => 'Organizations\Mail\EmployeeInvitationFactory',
@@ -150,6 +157,8 @@ return [
                     'Entity/OrganizationImage',
                     'route/lang/organizations/invite',
                     'Organizations/InviteEmployee' => [ 'accept' ],
+                    'route/lang/organizations/profile',
+                    'route/lang/organizations/profileDetail',
                 ],
                 'deny' => [
                     'route/lang/organizations',
@@ -162,6 +171,8 @@ return [
                     'route/lang/organizations',
                     'Organizations/InviteEmployee',
                     'Entity/Organization' => [ 'edit' => 'Organizations/Write' ],
+                    'route/lang/organizations/profile',
+                    'route/lang/organizations/profileDetail'
                 ],
             ],
         ],
@@ -184,6 +195,10 @@ return [
                     'list' => [
                         'label' => /*@translate*/ 'Overview',
                         'route' => 'lang/organizations',
+                    ],
+                    'profile' => [
+                        'label' => /*@translate*/ 'Profiles',
+                        'route' => 'lang/organizations/profile',
                     ],
                     'edit' => [
                         'label' => /*@translate*/ 'Insert',
@@ -236,5 +251,11 @@ return [
             'class' => '\Organizations\Options\ImageFileCacheOptions'
         ],
         \Organizations\Options\OrganizationLogoOptions::class => [],
-    ]
+    ],
+
+    'paginator_manager' => [
+        'factories' => [
+            'Organizations/ListJob' => \Organizations\Paginator\ListJobPaginatorFactory::class
+        ]
+    ],
 ];

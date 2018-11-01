@@ -14,42 +14,65 @@
 
     function resetSearchForm(event)
     {
+
         var $form = $(event.target);
+        console.debug('resetsearchform', event.data);
+
+        if ("native" === event.data.handleBy) {
+            var uri = $form.attr('action');
+            uri += (uri.match(/\?/) ? '&' : '?') + 'clear=1';
+            window.location.href = uri;
+            return false;
+        }
+
         win.setTimeout(function() {
-            // iterate over all of the inputs for the form
-
-            // element that was passed in
-
             $(':input', $form).each(function() {
 
+                var $input = $(this);
                 var type = this.type;
                 var tag = this.tagName.toLowerCase(); // normalize case
 
                 if (type == 'text' || type == 'password' || tag == 'textarea') {
                     this.value = "";
-                    $(this).change();
+                    $input.change();
 
                 } else if (type == 'checkbox' || type == 'radio') {
                     this.checked = false;
-                    $(this).change();
+                    $input.change();
 
                 } else if (tag == 'select') {
-                    this.selectedIndex = -1;
-                    $(this).trigger('change', [ true ]);
+                    var selected = -1;
+                    if (true === $input.data('clearOnSelect')) {
+                        $input.html('');
+                    } else {
+                        $input.find('option[selected]').each(function () {
+                            selected = $(this).prop('index');
+                        });
+                    }
+                    this.selectedIndex = selected;
+
+                    $input.trigger('change', {isSelect2Change: true});
                 }
             });
-
 
             loadPaginator($form, true);
         }, 100);
     }
 
-    function submitSearchForm(event, isSelect2change)
+    function submitSearchForm(event, flags)
     {
-        if (!isSelect2change) {
-            var $form = $(event.target);
-            loadPaginator($form);
+        flags = flags || {};
+
+        if (flags.isSelect2change) {
+            return false;
         }
+
+        if ('native' === event.data.handleBy && !flags.forceAjax) {
+            return true;
+        }
+
+        var $form = $(event.target);
+        loadPaginator($form);
 
         return false;
     }
@@ -71,10 +94,12 @@
         $paginator.paginationContainer('load', baseUri + '?' + toQuery(query));
     }
 
-    function toQuery(data)
+    function toQuery(data, encode)
     {
         var queryParts = [];
         $.each(data, function(name, value) {
+            value=encodeURIComponent(value);
+            name=encodeURIComponent(name);
             queryParts.push(name + '=' + value);
         });
 
@@ -113,24 +138,27 @@
             }
         });
 
-        console.debug('sierializeForm:', data, parsed);
         return toQuery(parsed);
 
     }
 
     function parseQueryString(queryStr, filter, exclude)
     {
-        queryStr = decodeURIComponent(queryStr);
+        //queryStr = queryStr.replace(/\%26/g, '__and__');
+        //queryStr = decodeURIComponent(queryStr);
         var vars = queryStr.split('&');
         var data = {};
 
         for (i=0, c=vars.length; i<c; i++) {
+            vars[i] = vars[i].replace(/__and__/g, '&');
             var varParts = vars[i].split('=');
-            if ((exclude && -1 != $.inArray(varParts[0], filter))
-                || (!exclude && -1 == $.inArray(varParts[0], filter))
+            var name=decodeURIComponent(varParts[0]);
+            var value=decodeURIComponent(varParts[1]);
+            if ((exclude && -1 != $.inArray(name, filter))
+                || (!exclude && -1 == $.inArray(name, filter))
             ) { continue; }
 
-            data[varParts[0]] = varParts[1];
+            data[name] = value;
         }
 
         return data;
@@ -148,13 +176,21 @@
                         $form.find('[name="' + name + '"]').val(searchParams[key]);
                     }
                 }
-                $form.find('select').trigger('change', [ true ]);
+                $form.find('select').trigger('change', {isSelect2Change: true});
             }
 
-            $form.on('reset.yk.core.search-form', resetSearchForm)
-                 .on('submit.yk.core.search-form', submitSearchForm)
-                 .on('change.yk.core.search-form', '[data-submit-on-change="true"]', submitSearchForm)
-                 .on('click.yk.core.search-form', '[data-submit-on-click="true"]', submitSearchForm);
+            var data = $form.data();
+            if ('native' === data.handleBy) {
+                $form.append('<input type="hidden" name="clear" value="1">');
+            }
+
+            $form
+                .on('reset.yk.core.search-form', data, resetSearchForm)
+                .on('submit.yk.core.search-form', data, submitSearchForm)
+                .on('change.yk.core.search-form', '[data-submit-on-change="true"]', data, submitSearchForm)
+                .on('click.yk.core.search-form', '[data-submit-on-click="true"]', data, submitSearchForm)
+            ;
+
 
         });
     };

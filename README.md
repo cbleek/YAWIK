@@ -2,8 +2,8 @@ YAWIK
 =====
 
 YAWIK offers a Web based solution for managing job applications. Jobs ads can
-be entered or pushed to the system. The sytem assigns application forms to job
-ads. Applicants and Recruiters can connect to YAWIK using social networks. 
+be entered or pushed to the system. The system assigns application forms to job
+ads. Applicants and recruiters can connect to YAWIK using social networks. 
 Currently it is possible to integrate YAWIK into a corporate Web site by 
 extending it with a module. It is intended to become a distributed system for 
 connecting recruiters and applicants.
@@ -25,20 +25,14 @@ Build status:
 [![Coverage Status](https://coveralls.io/repos/cross-solution/YAWIK/badge.svg?branch=develop)](https://coveralls.io/r/cross-solution/YAWIK?branch=develop)
 [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/cross-solution/YAWIK.svg)](http://isitmaintained.com/project/cross-solution/YAWIK "Average time to resolve an issue")
 [![Percentage of issues still open](http://isitmaintained.com/badge/open/cross-solution/YAWIK.svg)](http://isitmaintained.com/project/cross-solution/YAWIK "Percentage of issues still open")
-[![Dependency Status](https://www.versioneye.com/user/projects/54f0486b4f3108d1fa000266/badge.svg?style=flat)](https://www.versioneye.com/user/projects/54f0486b4f3108d1fa000266)
+
 
 
 Demo
 ----
 
 http://yawik.org/demo/ (this demonstrates YAWIK as an applicant tracking system)
-http://jobs.yawik.org (this demonstrates YAWIK as a Jobportal) 
-
-Who is using YAWIK?
--------------------
-
-YAWIK is used as a Jobboard by https://mygreatjobs.de/. Phoenixdesign uses
-YAWIK is used as a companies career portal by Phoenixdesign http://bewerbung.phoenixdesign.com/ and Frankwalder https://jobs.frankwalder.com/de
+http://jobs.yawik.org (YAWIK as a Jobportal with real job offers) 
 
 
 Documentation
@@ -54,7 +48,7 @@ http://yawik.org/docs/
 Forum
 -----
 
-https://groups.google.com/forum/?hl=de#!forum/yawik
+https://forum.yawik.org
 
 
 Contribute!

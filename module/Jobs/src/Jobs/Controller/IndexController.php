@@ -57,23 +57,6 @@ class IndexController extends AbstractActionController
     }
 
     /**
-     * attaches further Listeners for generating / processing the output
-     *
-     * @return $this
-     */
-    public function attachDefaultListeners()
-    {
-        parent::attachDefaultListeners();
-
-        $serviceLocator  = $this->serviceLocator;
-        $defaultServices = $serviceLocator->get('DefaultListeners');
-        $events          = $this->getEventManager();
-        $events->attach($defaultServices);
-
-        return $this;
-    }
-
-    /**
      * List job postings
      *
      * @return ViewModel
@@ -110,10 +93,10 @@ class IndexController extends AbstractActionController
 
         $paginator = $this->paginator('Jobs/Job', $params);
 
-        $return = array(
+        $return = [
             'by'   => $queryParams->get('by', 'all'),
             'jobs' => $paginator,
-        );
+        ];
         if (isset($this->searchForm)) {
             $return['filterForm'] = $this->searchForm;
         }
@@ -134,7 +117,7 @@ class IndexController extends AbstractActionController
         /* @var $request \Zend\Http\Request */
         $request     = $this->getRequest();
         $params      = $request->getQuery();
-        $isRecruiter = $this->acl()->isRole(User::ROLE_RECRUITER);
+        $isRecruiter = $this->Acl()->isRole(User::ROLE_RECRUITER);
 
         if ($isRecruiter) {
             $params->set('by', 'me');
@@ -142,32 +125,11 @@ class IndexController extends AbstractActionController
 
         $paginator = $this->paginator('Jobs/Job');
 
-        return array(
+        return [
             'script' => 'jobs/index/dashboard',
             'type'   => $this->params('type'),
             'myJobs' => $this->jobRepository,
             'jobs'   => $paginator
-        );
-    }
-
-    /**
-     * Action hook for Job search bar in list filter.
-     *
-     * @return JsonModel
-     */
-    public function typeaheadAction()
-    {
-        $query      = $this->params()->fromQuery('q', '*');
-
-        $return = array();
-        foreach ($this->jobRepository->getTypeaheadResults($query, $this->auth('id')) as $id => $item) {
-            $return[] = array(
-                'id'      => $id,
-                'title'   => $item['title'],
-                'applyId' => $item['applyId'],
-            );
-        }
-
-        return new JsonModel($return);
+        ];
     }
 }

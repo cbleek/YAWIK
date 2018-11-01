@@ -42,11 +42,30 @@ class TemplateController extends AbstractActionController
      * @var AbstractOptions
      */
     protected $config;
+    
+    protected $viewModelTemplateFilter;
+    
+    protected $translator;
+    
+    protected $viewHelper;
+    
+    protected $formManager;
 
-    public function __construct(Repository\Job $jobRepository, AbstractOptions $config)
+    public function __construct(
+    	Repository\Job $jobRepository,
+	    $viewModelTemplateFilter,
+	    $translator,
+	    AbstractOptions $config,
+	    $viewHelper,
+		$formManager
+    )
     {
+    	$this->viewModelTemplateFilter = $viewModelTemplateFilter;
+    	$this->translator = $translator;
         $this->jobRepository = $jobRepository;
         $this->config = $config;
+        $this->formManager = $formManager;
+        $this->viewHelper = $viewHelper;
     }
 
     /**
@@ -67,7 +86,7 @@ class TemplateController extends AbstractActionController
         } catch (NotFoundException $e) {
             $response->setStatusCode(Response::STATUS_CODE_404);
             return [
-                'message' => sprintf($this->serviceLocator->get('Translator')->translate('Job with id "%s" not found'), $id)
+                'message' => sprintf($this->translator->translate('Job with id "%s" not found'), $id)
             ];
         }
         
@@ -78,7 +97,7 @@ class TemplateController extends AbstractActionController
         $user = $this->auth()->getUser();
 
         /* @var \Zend\View\Model\ViewModel $model */
-        $model = $this->serviceLocator->get('Jobs/viewModelTemplateFilter')->__invoke($job);
+        $model = $this->viewModelTemplateFilter->getModel($job);
 
         if (
             Status::ACTIVE == $job->getStatus() or
@@ -123,11 +142,10 @@ class TemplateController extends AbstractActionController
         /** @var \Zend\Http\Request $request */
         $request              = $this->getRequest();
         $isAjax               = $request->isXmlHttpRequest();
-        $services             = $this->serviceLocator;
-        $viewHelperManager    = $services->get('ViewHelperManager');
+        $viewHelperManager    = $this->viewHelper;
         $mvcEvent             = $this->getEvent();
         $applicationViewModel = $mvcEvent->getViewModel();
-        $forms                = $services->get('FormElementManager');
+        $forms                = $this->formManager;
 
         /** @var \Jobs\Form\JobDescriptionTemplate $formTemplate */
         $formTemplate         = $forms->get(
@@ -160,15 +178,16 @@ class TemplateController extends AbstractActionController
 
             $instanceForm->setData($postData);
             if ($instanceForm->isValid()) {
-                $this->serviceLocator->get('repositories')->persist($job);
+                $this->jobRepository->store($job);
             }
         }
 
-        $model = $services->get('Jobs/ViewModelTemplateFilter')->__invoke($formTemplate);
+        $model = $this->viewModelTemplateFilter->getModel($formTemplate);
 
         if (!$isAjax) {
             $basePath   = $viewHelperManager->get('basepath');
             $headScript = $viewHelperManager->get('headscript');
+            $headScript->prependFile($basePath('/assets/jquery/jquery.min.js'));
             $headScript->appendFile($basePath->__invoke('/Core/js/core.forms.js'));
             $headScript->appendScript('
                 $(document).ready(function() {

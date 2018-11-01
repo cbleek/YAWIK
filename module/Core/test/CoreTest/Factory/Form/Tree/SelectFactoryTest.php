@@ -16,9 +16,9 @@ use Core\Form\Hydrator\Strategy\TreeSelectStrategy;
 use CoreTest\Form\Hydrator\Strategy\TreeSelectStrategyTest;
 use CoreTestUtils\TestCase\ServiceManagerMockTrait;
 use CoreTestUtils\TestCase\TestInheritanceTrait;
-use Zend\Form\FormElementManager\FormElementManagerV2Polyfill;
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\MutableCreationOptionsInterface;
+use Zend\Form\FormElementManager\FormElementManagerV3Polyfill;
+use Zend\ServiceManager\Factory\FactoryInterface;
+//use Zend\ServiceManager\MutableCreationOptionsInterface;
 use Zend\ServiceManager\ServiceManager;
 
 /**
@@ -26,6 +26,8 @@ use Zend\ServiceManager\ServiceManager;
  * 
  * @covers \Core\Factory\Form\Tree\SelectFactory
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
+ * @author Anthonius Munthi <me@itstoni.com>
+ *
  * @group Core
  * @group Core.Factory
  * @group Core.Factory.Form
@@ -47,7 +49,7 @@ class SelectFactoryTest extends \PHPUnit_Framework_TestCase
         ],
     ];
 
-    private $inheritance = [ FactoryInterface::class, MutableCreationOptionsInterface::class ];
+    private $inheritance = [ FactoryInterface::class];
 
     public function testSetCreationOptions()
     {
@@ -63,17 +65,19 @@ class SelectFactoryTest extends \PHPUnit_Framework_TestCase
     public function testCreateServiceInvokesItself()
     {
         $services = new ServiceManager();
-        $forms    = new FormElementManagerV2Polyfill();
-        $forms->setServiceLocator($services);
+        $forms    = new FormElementManagerV3Polyfill($services);
 
         $options = [ 'test' => 'work?' ];
         $this->target->setCreationOptions($options);
 
-        $this->target->expects($this->once())->method('__invoke')
+        $this->target
+	        ->expects($this->once())
+	        ->method('__invoke')
             ->with($services, SelectFactory::class, $options)
-            ->willReturn(true);
+            ->willReturn(true)
+        ;
 
-        $this->assertTrue($this->target->createService($forms));
+        $this->assertTrue($this->target->createService($services));
         $this->assertAttributeEmpty('options', $this->target);
     }
 

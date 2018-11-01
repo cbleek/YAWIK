@@ -18,6 +18,8 @@ use Organizations\Factory\Controller\Plugin\AcceptInvitationHandlerFactory;
  * 
  * @covers \Organizations\Factory\Controller\Plugin\AcceptInvitationHandlerFactory
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
+ * @author Anthonius Munthi <me@itstoni.com>
+ *
  * @group Organizations
  * @group Organizations.Factory
  * @group Organizations.Factory.Controller
@@ -31,13 +33,13 @@ class AcceptInvitationHandlerFactoryTest extends \PHPUnit_Framework_TestCase
      */
     public function testImplementsInterface()
     {
-        $this->assertInstanceOf('\Zend\ServiceManager\FactoryInterface', new AcceptInvitationHandlerFactory());
+        $this->assertInstanceOf('\Zend\ServiceManager\Factory\FactoryInterface', new AcceptInvitationHandlerFactory());
     }
 
     /**
      * @testdox Creates a proper configured AcceptInvitationHandler plugin instance.
      */
-    public function testCreateService()
+    public function testInvokation()
     {
         $userRep = $this->getMockBuilder('\Auth\Repository\User')->disableOriginalConstructor()->getMock();
         $orgRep = $this->getMockBuilder('\Organizations\Repository\Organization')->disableOriginalConstructor()->getMock();
@@ -50,24 +52,27 @@ class AcceptInvitationHandlerFactoryTest extends \PHPUnit_Framework_TestCase
 
         $auth = $this->getMockBuilder('\Auth\AuthenticationService')->disableOriginalConstructor()->getMock();
 
-        $services = $this->getMockBuilder('\Zend\ServiceManager\ServiceManager')->disableOriginalConstructor()->getMock();
-        $services->expects($this->exactly(2))->method('get')->will($this->returnValueMap(
-            array(
-                array('repositories', true, $repositories),
-                array('AuthenticationService', true, $auth)
-            )
-        ));
-
-        $plugins = $this->getMockBuilder('\Zend\Mvc\Controller\PluginManager')->disableOriginalConstructor()->getMock();
-        $plugins->expects($this->once())->method('getServiceLocator')->willReturn($services);
+        $services = $this->getMockBuilder('\Zend\ServiceManager\ServiceManager')
+                         ->disableOriginalConstructor()
+                         ->getMock()
+        ;
+        $services->expects($this->exactly(2))
+                 ->method('get')
+                 ->will($this->returnValueMap(
+		            array(
+		                array('repositories',$repositories),
+		                array('AuthenticationService', $auth)
+		            )
+                 ))
+        ;
 
         $target = new AcceptInvitationHandlerFactory();
         /*
          * Test start here
          */
 
-        $plugin = $target->createService($plugins);
-
+        $plugin = $target->__invoke($services,'irrelevant');
+	    
         $this->assertInstanceOf('\Organizations\Controller\Plugin\AcceptInvitationHandler', $plugin);
         $this->assertSame($userRep, $plugin->getUserRepository());
         $this->assertSame($orgRep, $plugin->getOrganizationRepository());

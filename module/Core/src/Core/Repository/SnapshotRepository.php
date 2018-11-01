@@ -21,9 +21,9 @@ use Zend\Hydrator\HydratorInterface;
 
 /**
  * ${CARET}
- * 
+ *
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
- * @todo write test 
+ * @author Anthonius Munthi <me@itstoni.com>
  */
 class SnapshotRepository extends DocumentRepository
 {
@@ -89,7 +89,7 @@ class SnapshotRepository extends DocumentRepository
     public function getSourceHydrator()
     {
         if (!$this->sourceHydrator) {
-            return $this->getHydrator();
+            $this->sourceHydrator = $this->getHydrator();
         }
 
         return $this->sourceHydrator;
@@ -115,13 +115,16 @@ class SnapshotRepository extends DocumentRepository
         return $this->snapshotAttributes;
     }
 
-
-
     public function create(EntityInterface $source, $persist = true)
     {
-
         $snapshot = $this->getDocumentName();
         $snapshot = new $snapshot($source);
+
+        $eventArgs = new DoctrineMongoODM\Event\EventArgs([
+            'entity' => $snapshot
+        ]);
+        $this->dm->getEventManager()
+                 ->dispatchEvent(DoctrineMongoODM\Event\RepositoryEventsSubscriber::postCreate, $eventArgs);
 
         $this->copy($source, $snapshot);
 
@@ -132,49 +135,91 @@ class SnapshotRepository extends DocumentRepository
         return $snapshot;
     }
 
-    protected function copy($source, $target, $attributes = null)
+    protected function copy($source, $target, $inverse = false)
     {
-        if (!$attributes) {
-            if ($source instanceOf SnapshotAttributesProviderInterface) {
-                $attributes = $source->getSnapshotAttributes();
-            } else if ($target instanceOf SnapshotAttributesProviderInterface) {
-                $attributes = $target->getSnapshotAttributes();
-            } else {
-                $attributes = $this->getSnapshotAttributes();
-            }
+        if ($inverse) {
+            $attributes = $this->getCopyAttributes($target, $source);
+            $sourceHydrator = $this->getHydrator();
+            $targetHydrator = $this->getSourceHydrator();
+        } else {
+            $attributes = $this->getCopyAttributes($source, $target);
+            $sourceHydrator = $this->getSourceHydrator();
+            $targetHydrator = $this->getHydrator();
+            $source = clone $source;
         }
 
-        $data = $this->getSourceHydrator()->extract(clone $source);
+
+        $data = $sourceHydrator->extract($source);
         $data = array_intersect_key($data, array_flip($attributes));
-        $this->getHydrator()->hydrate($data, $target);
+        $targetHydrator->hydrate($data, $target);
     }
 
-    public function merge(SnapshotInterface $snapshot)
+    protected function getCopyAttributes($source, $target)
+    {
+        $attributes = $this->getSnapshotAttributes();
+
+        if (!empty($attributes)) {
+            return $attributes;
+        }
+
+        if ($source instanceof SnapshotAttributesProviderInterface) {
+            return $source->getSnapshotAttributes();
+        }
+
+        if ($target instanceof SnapshotAttributesProviderInterface) {
+            return $target->getSnapshotAttributes();
+        }
+
+        return [];
+    }
+
+    public function merge(SnapshotInterface $snapshot, $snapshotDraftStatus = false)
     {
         $this->checkEntityType($snapshot);
 
-        $entity = $snapshot->getSnapshotMeta()->getEntity();
+        $meta       = $snapshot->getSnapshotMeta();
+        $entity     = $snapshot->getOriginalEntity();
 
-        $this->copy($snapshot, $entity);
+        $meta->setIsDraft((bool) $snapshotDraftStatus);
+
+        $this->copy($snapshot, $entity, true);
 
         return $entity;
     }
 
+    /**
+     * @param SnapshotInterface $snapshot
+     * @todo implement or remove this method
+     */
+    public function diff(SnapshotInterface $snapshot)
+    {
+        $entity = $snapshot->getOriginalEntity();
+        $attributes = $this->getCopyAttributes($entity, $snapshot);
+    }
+
     public function findLatest($sourceId, $isDraft = false)
     {
-        return $this->createQueryBuilder()
-          ->field('snapshotMeta.entity.$id')->equals(new \MongoId($sourceId))
+        $entity = $this->createQueryBuilder()
+          ->field('snapshotEntity')->equals(new \MongoId($sourceId))
           ->field('snapshotMeta.isDraft')->equals($isDraft)
           ->sort('snapshotMeta.dateCreated.date', 'desc')
           ->limit(1)
           ->getQuery()
-          ->getSingleResult();
+          ->getSingleResult()
+        ;
+        if ($entity) {
+            $this->dm->getEventManager()->dispatchEvent(
+                \Doctrine\ODM\MongoDB\Events::postLoad,
+                new \Doctrine\ODM\MongoDB\Event\LifecycleEventArgs($entity, $this->dm)
+            );
+        }
 
+        return $entity;
     }
 
     public function findBySourceId($sourceId, $includeDrafts = false)
     {
-        $criteria = ['snapshotMeta.entity.$id' => $sourceId];
+        $criteria = ['snapshotEntity' => $sourceId];
 
         if (!$includeDrafts) {
             $criteria['snapshotMeta.isDraft'] = false;
@@ -205,23 +250,32 @@ class SnapshotRepository extends DocumentRepository
         return $this;
     }
 
+    /**
+     * @param $sourceId
+     * @todo implement or remove this method
+     */
     public function removeAll($sourceId)
     {
-
+        throw new \LogicException("This method is not implemented yet");
     }
 
     protected function checkEntityType($entity)
     {
-        if ( !is_a($entity,  $this->getDocumentName()) ) {
+        if (!is_a($entity, $this->getDocumentName())) {
             throw new \InvalidArgumentException(sprintf(
-                'Entity must be of type %s but recieved %s instead',
+                'Entity must be of type %s but received %s instead',
                 $this->getDocumentName(),
                 get_class($entity)
             ));
         }
-
     }
 
+    /**
+     * @param $source
+     * @param array $attributes
+     * @return array
+     * @todo remove this method if not used, because extract already implemented in $this->sourceHydrator->extract
+     */
     protected function extract($source, array $attributes = [])
     {
         $hydrator = $this->getSourceHydrator();
@@ -238,16 +292,14 @@ class SnapshotRepository extends DocumentRepository
                 $spec = null;
             }
 
-            if ($data[$key] instanceOf EntityInterface) {
+            if ($data[$key] instanceof EntityInterface) {
                 $hydrate[$key] = clone $data[$key];
-
-            } else if ($data[$key] instanceOf Collection) {
+            } elseif ($data[$key] instanceof Collection) {
                 $collection = new ArrayCollection();
                 foreach ($data[$key] as $item) {
                     $collection->add(clone $item);
                 }
                 $hydrate[$key] = $collection;
-
             } else {
                 $hydrate[$key] = $data[$key];
             }

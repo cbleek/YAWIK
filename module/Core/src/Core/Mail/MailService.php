@@ -10,6 +10,8 @@
 /** */
 namespace Core\Mail;
 
+use Core\Factory\ContainerAwareInterface;
+use Interop\Container\ContainerInterface;
 use Zend\I18n\Translator\TranslatorAwareInterface;
 use Zend\Mail\Address;
 use Zend\Mail\AddressList;
@@ -25,9 +27,17 @@ use Zend\ServiceManager\ServiceLocatorInterface;
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
  * @author Mathias Weitz <weitz@cross-solution.de>
  * @author Carsten Bleek <bleek@cross-solution.de>
+ * @author Anthonius Munthi <me@itstoni.com>
  */
 class MailService extends AbstractPluginManager
 {
+    /**
+     * Define transport type to use
+     */
+    const TRANSPORT_SMTP        = 'smtp';
+    const TRANSPORT_FILE        = 'file';
+    const TRANSPORT_SENDMAIL    = 'sendmail';
+
     /**
      * The mail Transport
      *
@@ -68,7 +78,7 @@ class MailService extends AbstractPluginManager
     );
 
     protected $factories = array(
-        'htmltemplate'   => '\Core\Mail\HTMLTemplateMessage::factory',
+        'htmltemplate'   => [HTMLTemplateMessage::class,'factory'],
     );
 
     /**
@@ -78,42 +88,44 @@ class MailService extends AbstractPluginManager
      * - Inject the translator to mails implementing TranslatorAwareInterface
      * - Call init() method on Mails if such method exists.
      *
-     * @param ConfigInterface $configuration
+     * @param ContainerInterface $container
+     * @param mixed $configuration
      */
-    public function __construct(ServiceLocatorInterface $serviceLocator, ConfigInterface $configuration = null)
+    public function __construct($container, $configuration = [])
     {
-        parent::__construct($configuration);
-        $this->serviceLocator = $serviceLocator;
-        $self = $this;
-
+        parent::__construct($container,$configuration);
+        
         $this->addInitializer(
-            function ($instance) use ($self) {
+            function ($context,$instance){
                 if ($instance instanceof TranslatorAwareInterface) {
-                    $translator = $self->getServiceLocator()->get('translator');
+                    $translator = $context->get('translator');
                     $instance->setTranslator($translator);
                     if (null === $instance->getTranslatorTextDomain()) {
                         $instance->setTranslatorTextDomain();
                     }
                     $instance->setTranslatorEnabled(true);
                 }
-            }, /*topOfStack*/
-            false
+	            if($instance instanceof ContainerAwareInterface){
+		            $instance->setContainer($context);
+	            }
+            }
         );
+        
+        //@TODO: [ZF3] verify that removing this lines is save
+        //$this->addInitializer(
+        //   function ($context,$instance) {
+        //        if (method_exists($instance, 'setServiceLocator')) {
+        //            //$instance->setServiceLocator($this);
+        //        }
+         //   }
+        //);
+        
         $this->addInitializer(
-            function ($instance) {
-                if (method_exists($instance, 'setServiceLocator')) {
-                    $instance->setServiceLocator($this);
-                }
-            },
-            false
-        );
-        $this->addInitializer(
-            function ($instance) {
+            function ($context,$instance){
                 if (method_exists($instance, 'init')) {
                     $instance->init();
                 }
-            },
-            false
+            }
         );
     }
 
@@ -122,7 +134,7 @@ class MailService extends AbstractPluginManager
      *
      * @throws \InvalidArgumentException
      */
-    public function validatePlugin($plugin)
+    public function validate($plugin)
     {
         if (!$plugin instanceof MailMessage) {
             throw new \InvalidArgumentException(
@@ -154,9 +166,13 @@ class MailService extends AbstractPluginManager
      */
     public function setFrom($email, $name = null)
     {
-        $this->from = is_object($email) || null === $name
-            ? $email
-            : array($email => $name);
+    	if(is_array($email)){
+    		$this->from = [$email['email'] => $email['name']];
+	    }else{
+		    $this->from = is_object($email) || null === $name
+			    ? $email
+			    : array($email => $name);
+	    }
 
         return $this;
     }
@@ -214,6 +230,14 @@ class MailService extends AbstractPluginManager
             $mailerHeader = new \Zend\Mail\Header\GenericHeader('X-Mailer', $this->getMailer());
             $headers->addHeader($mailerHeader);
             $mailerHeader->setEncoding('ASCII'); // get rid of other encodings for this header!
+        }
+
+        /* Allow HTMLTemplateMails to alter subject in the view script.
+         * As the Zend Transport class build subject before the getBodyText call,
+         * we have to call it here.
+         */
+        if ($mail instanceOf \Core\Mail\HTMLTemplateMessage) {
+            $mail->getBodyText();
         }
 
         $transport->send($mail);

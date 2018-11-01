@@ -13,6 +13,7 @@ namespace Core\Listener;
 use Core\EventManager\EventManager;
 use Core\EventManager\ListenerAggregateTrait;
 use Core\Listener\Events\AjaxEvent;
+use Zend\EventManager\EventManagerInterface;
 use Zend\EventManager\ListenerAggregateInterface;
 use Zend\Json\Json;
 use Zend\Mvc\MvcEvent;
@@ -55,7 +56,7 @@ class AjaxRouteListener implements ListenerAggregateInterface
      *
      * @param EventManager $ajaxEventManager
      */
-    public function __construct(EventManager $ajaxEventManager)
+    public function __construct(EventManagerInterface $ajaxEventManager)
     {
         $this->ajaxEventManager = $ajaxEventManager;
     }
@@ -82,6 +83,7 @@ class AjaxRouteListener implements ListenerAggregateInterface
         /* @var \Zend\Http\PhpEnvironment\Response $response */
         /* @var AjaxEvent $ajaxEvent */
         $response = $event->getResponse();
+        
         $ajaxEvent = $this->ajaxEventManager->getEvent($ajax, $this);
         $ajaxEvent->setRequest($request);
         $ajaxEvent->setResponse($response);

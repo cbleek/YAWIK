@@ -15,14 +15,14 @@ use Applications\Repository\Filter\PaginationQueryFactory;
 use Auth\AuthenticationService;
 use CoreTestUtils\TestCase\ServiceManagerMockTrait;
 use CoreTestUtils\TestCase\TestInheritanceTrait;
-use Zend\ServiceManager\FactoryInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
 
 /**
  * Tests for \Applications\Repository\Filter\PaginationQueryFactory
  * 
- * @covers \Applications\Repository\Filter\PaginationQueryFactory
- * @author Mathias Gelhausen <gelhausen@cross-solution.de>
- *  
+ * @covers  \Applications\Repository\Filter\PaginationQueryFactory
+ * @author  Mathias Gelhausen <gelhausen@cross-solution.de>
+ * @author  Anthonius Munthi <me@itstoni.com>
  */
 class PaginationQueryFactoryTest extends \PHPUnit_Framework_TestCase
 {
@@ -48,7 +48,7 @@ class PaginationQueryFactoryTest extends \PHPUnit_Framework_TestCase
         $services = $this->getServiceManagerMock(['AuthenticationService' => ['service' => $auth, 'count_get' => 1]]);
         $plugins  = $this->getPluginManagerMock($services, 1);
 
-        $filter   = $this->target->createService($plugins);
+        $filter   = $this->target->createService($services);
 
         $this->assertInstanceOf(PaginationQuery::class, $filter);
     }

@@ -14,6 +14,7 @@ use Organizations\Controller\Plugin\AcceptInvitationHandler;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\JsonModel;
 use Zend\View\Model\ViewModel;
+use Organizations\Repository\Organization as OrganizationRepository;
 
 /**
  * This controller is responsible for the user invitation process.
@@ -24,10 +25,23 @@ use Zend\View\Model\ViewModel;
  * - Handles the acceptance of such an invitation.
  *
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
+ * @author Anthonius Munthi <me@itstoni.com>
  * @since  0.19
  */
 class InviteEmployeeController extends AbstractActionController
 {
+    /**
+     * @var OrganizationRepository
+     */
+    private $orgRepo;
+
+	public function __construct(
+        OrganizationRepository $orgRepo
+    )
+    {
+        $this->orgRepo = $orgRepo;
+    }
+
     /**
      * Invitation first step: Create or find user and send mail.
      *
@@ -100,8 +114,8 @@ class InviteEmployeeController extends AbstractActionController
         $result       = $this->forward()->dispatch('Auth\Controller\Password', array('action' => 'index'));
         $model        = new ViewModel(
             array(
-                                          'organization' => $organization->getOrganizationName()->getName()
-                                      )
+                'organization' => $organization->getOrganizationName()->getName()
+            )
         );
 
         if (!$result->getVariable('valid', false)) {
@@ -120,13 +134,11 @@ class InviteEmployeeController extends AbstractActionController
      */
     protected function getOrganizationEntity()
     {
-        /* @var $organizations \Organizations\Repository\Organization */
-        $services      = $this->serviceLocator;
-        $repositories  = $services->get('repositories');
-        $organizations = $repositories->get('Organizations');
+        /* @var $orgRepo \Organizations\Repository\Organization */
+        $orgRepo = $this->orgRepo;
         $organiationId = $this->params()->fromQuery('organization');
 
-        $organization = $organizations->find($organiationId);
+        $organization = $orgRepo->find($organiationId);
 
         return $organization;
     }
@@ -142,8 +154,8 @@ class InviteEmployeeController extends AbstractActionController
 
         return new ViewModel(
             array(
-                                 'organization' => $organization->getOrganizationName()->getName()
-                             )
+                'organization' => $organization->getOrganizationName()->getName()
+            )
         );
     }
 

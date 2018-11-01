@@ -11,8 +11,11 @@
 namespace Jobs\Controller;
 
 use Core\Form\SummaryForm;
+use Interop\Container\ContainerInterface;
 use Jobs\Entity\Category;
 use Jobs\Listener\Events\JobEvent;
+use Jobs\Repository\Categories;
+use Zend\Form\FormInterface;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\JsonModel;
 use Zend\View\Model\ViewModel;
@@ -25,7 +28,32 @@ use Zend\View\Model\ViewModel;
  */
 class AdminCategoriesController extends AbstractActionController
 {
+	private $adminCategoriesForm;
+	
+	/**
+	 * @var Categories
+	 */
+	private $jobsCategoryRepo;
+	
+	private $repositories;
+	
+	private $viewHelperManager;
+	
+	static public function factory(ContainerInterface $container)
+	{
+		$ob = new static();
+		$ob->initContainer($container);
+		return $ob;
+	}
 
+	public function initContainer(ContainerInterface $container)
+	{
+		$this->adminCategoriesForm = $container->get('forms')->get('Jobs/AdminCategories');
+		$this->repositories = $container->get('repositories');
+		$this->jobsCategoryRepo = $container->get('repositories')->get('Jobs/Category');
+		$this->viewHelperManager = $container->get('ViewHelperManager');
+	}
+	
     public function indexAction()
     {
         $form = $this->setupContainer();
@@ -44,13 +72,10 @@ class AdminCategoriesController extends AbstractActionController
 
     private function setupContainer()
     {
-        $services = $this->serviceLocator;
-
-        $forms = $services->get('forms');
-        $form = $forms->get('Jobs/AdminCategories');
-
-        $repositories = $services->get('repositories');
-        $rep = $repositories->get('Jobs/Category');
+        //$services = $this->serviceLocator;
+        $form = $this->adminCategoriesForm;
+	    $repositories = $this->repositories;
+        $rep = $this->jobsCategoryRepo;
 
         $professions = $rep->findOneBy(['value' => 'professions']);
         if (!$professions) {
@@ -64,8 +89,15 @@ class AdminCategoriesController extends AbstractActionController
             $repositories->store($types);
         }
 
+        $industries = $rep->findOneBy(['value' => 'industries']);
+        if (!$industries) {
+            $industries = new Category('Industries', 'industries');
+            $repositories->store($industries);
+        }
+
         $form->setEntity($professions, 'professions');
         $form->setEntity($types, 'employmentTypes');
+        $form->setEntity($industries, 'industries');
 
         return $form;
     }
@@ -76,10 +108,10 @@ class AdminCategoriesController extends AbstractActionController
         $form       = $container->getForm($identifier);
         $form->setData($_POST);
         $valid = $form->isValid();
-        $this->serviceLocator->get('repositories')->store($form->getObject());
+        $this->repositories->store($form->getObject());
         $form->bind($form->getObject());
         $form->setRenderMode(SummaryForm::RENDER_SUMMARY);
-        $helper = $this->serviceLocator->get('ViewHelperManager')->get('summaryform');
+        $helper = $this->viewHelperManager->get('summaryForm');
 
         return new JsonModel([
             'content' => $helper($form),

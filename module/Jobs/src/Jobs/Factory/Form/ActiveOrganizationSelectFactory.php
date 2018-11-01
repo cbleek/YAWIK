@@ -12,7 +12,8 @@ namespace Jobs\Factory\Form;
 
 use Interop\Container\ContainerInterface;
 use Jobs\Form\OrganizationSelect;
-use Zend\ServiceManager\FactoryInterface;
+use Zend\ServiceManager\AbstractPluginManager;
+use Zend\ServiceManager\Factory\FactoryInterface;
 use Zend\ServiceManager\ServiceLocatorInterface;
 
 /**
@@ -23,6 +24,7 @@ use Zend\ServiceManager\ServiceLocatorInterface;
  *
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
  * @since 0.23
+ * @since 0.30 - refactored to implement lazy loading organization list.
  */
 class ActiveOrganizationSelectFactory implements FactoryInterface
 {
@@ -41,25 +43,28 @@ class ActiveOrganizationSelectFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        /* @var $serviceLocator \Zend\ServiceManager\AbstractPluginManager
-         * @var $jobsRepository \Jobs\Repository\Job
-         */
-        $repositories   = $container->get('repositories');
-        $jobsRepository = $repositories->get('Jobs');
-        $organizations  = $jobsRepository->findActiveOrganizations();
+        /* @var \Zend\Http\PhpEnvironment\Request $request */
+        $request = $container->get('Request');
+        $query   = $request->getQuery();
+        $initialId = $query->get('companyId');
+
+        $organizations = [];
+
+        if ($initialId) {
+            /* @var $serviceLocator \Zend\ServiceManager\AbstractPluginManager
+             * @var $repository \Organizations\Repository\Organization */
+            $repositories   = $container->get('repositories');
+            $repository = $repositories->get('Organizations');
+            $organization  = $repository->find($initialId);
+            $organizations[] = $organization;
+        }
+
         $select         = new OrganizationSelect();
 
         $select->setSelectableOrganizations($organizations);
+        $select->setAttribute('data-ajax', '?ajax=jobs.admin.activeorganizations');
 
         return $select;
 
-    }
-
-    /**
-     * Creates the organization select box.
-     */
-    public function createService(ServiceLocatorInterface $serviceLocator)
-    {
-        return $this($serviceLocator->getServiceLocator(), OrganizationSelect::class);
     }
 }

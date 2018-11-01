@@ -25,6 +25,9 @@ use Zend\EventManager\ResponseCollection;
  */
 class TriggerTest extends \PHPUnit_Framework_TestCase
 {
+	/**
+	 * @var TriggerTestEventManagerMock
+	 */
     protected $target;
 
     public function setUp()
@@ -37,16 +40,18 @@ class TriggerTest extends \PHPUnit_Framework_TestCase
     public function testNewEventIsCreatedIfNoEventInstanceIsProvided()
     {
         $this->target->trigger('test', null, []);
-
         $this->assertTrue($this->target->getEventCalled, 'No Event was created!');
+
+        $this->target->getEventCalled = false;
+        $this->target->triggerUntil(function() {}, 'test', null, []);
+        $this->assertTrue($this->target->getEventCalled, 'No Event was created (triggerUntil)');
     }
 
     public function testNoEventIsCreatedIfEventInstanceIsProvided()
     {
         $event = new Event();
-        $this->target->trigger('test', null, $event);
-        $this->target->trigger('test', $event);
         $this->target->trigger($event);
+        $this->target->triggerUntil(function() {}, $event);
 
         $this->assertFalse($this->target->getEventCalled, 'An event was created!');
     }
@@ -55,15 +60,10 @@ class TriggerTest extends \PHPUnit_Framework_TestCase
     {
         $event = new Event();
         $callback = function() {};
-        $this->target->trigger($event, $callback);
+        $this->target->triggerUntil($callback,$event);
 
         $this->assertSame($callback, $this->target->callback);
 
-        $this->target->callback = false;
-
-        $this->target->trigger('test', null, [], $callback);
-
-        $this->assertSame($callback, $this->target->callback);
     }
 }
 
@@ -78,7 +78,7 @@ class TriggerTestEventManagerMock extends \Core\EventManager\EventManager
         return parent::getEvent($name, $target, $params);
     }
 
-    protected function triggerListeners($event, EventInterface $e, $callback = null)
+    protected function triggerListeners(EventInterface $e, callable $callback = null)
     {
         $this->callback = $callback;
     }

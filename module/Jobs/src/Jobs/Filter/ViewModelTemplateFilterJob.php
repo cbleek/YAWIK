@@ -10,6 +10,7 @@
 
 namespace Jobs\Filter;
 
+
 /**
  * template ViewModel html
  *
@@ -27,6 +28,7 @@ class ViewModelTemplateFilterJob extends ViewModelTemplateFilterAbstract
     protected function extract($job)
     {
         $this->job = $job;
+        $this->getJsonLdHelper()->setJob($job);
         $this->setApplyData();
         $this->setOrganizationInfo();
         $this->setLocation();

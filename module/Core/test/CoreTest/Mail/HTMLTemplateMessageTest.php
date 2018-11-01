@@ -4,10 +4,9 @@ namespace CoreTest\Mail;
 
 use Core\Mail\HTMLTemplateMessage;
 use Core\Mail\MailService as CoreMailService;
-use CoreTestUtils\TestCase\ServiceManagerMockTrait;
 use Zend\Mvc\Application;
 use Zend\Mvc\MvcEvent;
-use Zend\Mvc\Router\RouteMatch;
+use Zend\Router\Http\RouteMatch;
 use Zend\Mvc\View\Http\ViewManager;
 use Zend\ServiceManager\ServiceLocatorInterface;
 use Zend\View\Model\ViewModel;
@@ -20,7 +19,7 @@ use Zend\View\View;
  *
  * @package     CoreTest\Mail
  * @ticket      222
- * @covers      Core\Mail\HTMLTemplateMessage
+ * @covers      \Core\Mail\HTMLTemplateMessage
  */
 class HTMLTemplateMessageTest extends \PHPUnit_Framework_TestCase
 {
@@ -80,9 +79,9 @@ class HTMLTemplateMessageTest extends \PHPUnit_Framework_TestCase
         $serviceManager
             ->method('get')
             ->willReturnMap([
-                ['viewManager', $viewManager],
-                ['viewResolver', $viewResolver],
-                ['application', $application]
+                ['ViewManager', $viewManager],
+                ['ViewResolver', $viewResolver],
+                ['Application', $application]
             ]);
 
         $this->resolver = $viewResolver;
@@ -187,10 +186,10 @@ class HTMLTemplateMessageTest extends \PHPUnit_Framework_TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $service
+        /*$service
             ->expects($this->once())
             ->method('getServiceLocator')
-            ->willReturn($this->serviceManager);
+            ->willReturn($this->serviceManager);*/
 
         $this->assertInstanceOf(
             HTMLTemplateMessage::class,

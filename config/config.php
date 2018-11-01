@@ -12,12 +12,16 @@ use Zend\Stdlib\ArrayUtils;
 
 $env = getenv('APPLICATION_ENV') ?: 'production';
 
+$coreModules = include 'common.modules.php';
 if (!file_exists(__DIR__ . '/autoload/yawik.config.global.php')) {
-    $modules = array('Install');
+    $modules = array_merge($coreModules,[
+        'Install',
+        'Core',
+        'Auth',
+        'Jobs',
+    ]);
 } else {
-    $modules = array(
-        'DoctrineModule',
-        'DoctrineMongoODMModule',
+    $modules = array_merge($coreModules,[
         'Core',
         'Auth',
         'Cv',
@@ -27,7 +31,7 @@ if (!file_exists(__DIR__ . '/autoload/yawik.config.global.php')) {
         'Pdf',
         'Geo',
         'Organizations',
-    );
+    ]);
 
     if (!isset($allModules)) {
         // allModules existiert nur, damit man verschiedene Konfigurationen auf dem gleichen System laufen lassen

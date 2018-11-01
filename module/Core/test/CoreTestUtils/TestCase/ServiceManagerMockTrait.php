@@ -13,11 +13,15 @@ namespace CoreTestUtils\TestCase;
 use CoreTestUtils\Mock\ServiceManager\Config as ServiceManagerMockConfig;
 use CoreTestUtils\Mock\ServiceManager\PluginManagerMock;
 use CoreTestUtils\Mock\ServiceManager\ServiceManagerMock;
+use Interop\Container\ContainerInterface;
+use Zend\ServiceManager\ServiceManager;
 
 /**
  * Creates a service manager mock with configured services.
  *
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
+ * @author Anthonius Munthi <me@itstoni.com>
+ *
  * @since  0.25
  */
 trait ServiceManagerMockTrait
@@ -63,6 +67,7 @@ trait ServiceManagerMockTrait
         $serviceManagerMock = new ServiceManagerMock();
         if (!empty($services)) {
             $config = new ServiceManagerMockConfig(['mocks' => $services]);
+            
             $config->configureServiceManager($serviceManagerMock);
         }
 
@@ -78,6 +83,7 @@ trait ServiceManagerMockTrait
      *
      * @see ServiceManagerMockConfig::configureServiceManager
      * @return ServiceManagerMock
+     * @TODO: [ZF3] add ability to override service when serviceManagerMock already created
      */
     public function getServiceManagerMock(array $services = [])
     {
@@ -99,20 +105,27 @@ trait ServiceManagerMockTrait
      */
     public function createPluginManagerMock($services = [], $parent = null, $count = 1)
     {
-
+    	if(is_null($parent)){
+    		$parent = $this->getServiceManagerMock();
+	    }
+    	$arrConfig = array();
         if (is_array($services)) {
             $config = new ServiceManagerMockConfig(['mocks' => $services]);
         } else {
-            $config = null;
+            $config = array();
             $count = is_int($parent) ? $parent : $count;
             $parent = $services;
         }
-
-        $pluginManagerMock = new PluginManagerMock($config);
-
-        if (null !== $parent) {
-            $pluginManagerMock->setServiceLocator($parent, $count);
+	    
+        $pluginManagerMock = new PluginManagerMock($parent);
+        if($config instanceof ServiceManagerMockConfig){
+	        $config->configureServiceManager($pluginManagerMock);
         }
+
+        //@TODO: [ZF3] Check if removing the lines below is safe
+	    //if (null !== $parent) {
+        //    $pluginManagerMock->setServiceLocator($parent, $count);
+        //}
 
         $this->__ServiceManagerMockTrait__mocks[] = $pluginManagerMock;
         return $pluginManagerMock;

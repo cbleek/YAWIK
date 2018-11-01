@@ -101,7 +101,7 @@ interface JobInterface extends
     /**
      * Gets the publishing date of a job posting
      *
-     * @return string
+     * @return \DateTime
      */
     public function getDatePublishStart();
     
@@ -117,7 +117,7 @@ interface JobInterface extends
     /**
      * Gets the end date for publishing a job posting
      *
-     * @return string
+     * @return \DateTime
      */
     public function getDatePublishEnd();
 
@@ -147,7 +147,6 @@ interface JobInterface extends
     /**
      * Gets the organisation name, which offers the job posting
      *
-     * @deprecated
      * @return string
      */
     public function getCompany();
@@ -155,7 +154,6 @@ interface JobInterface extends
     /**
      * Sets the organisation name, which offers a job posting
      *
-     * @deprecated
      * @param string $company
      * @return JobInterface $job
      */

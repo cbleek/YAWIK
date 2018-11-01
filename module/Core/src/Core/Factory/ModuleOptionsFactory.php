@@ -12,7 +12,7 @@ namespace Core\Factory;
 
 use Interop\Container\ContainerInterface;
 
-use Zend\ServiceManager\FactoryInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
 use Zend\ServiceManager\ServiceLocatorInterface;
 use Core\Options\ModuleOptions;
 
@@ -33,19 +33,8 @@ class ModuleOptionsFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $config = $container->get('Config');
+        $config = $container->get('config');
 
         return new ModuleOptions(isset($config['core_options']) ? $config['core_options'] : array());
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @param ServiceLocatorInterface $serviceLocator
-     * @return ModuleOptions
-     */
-    public function createService(ServiceLocatorInterface $serviceLocator)
-    {
-        return $this($serviceLocator, ModuleOptions::class);
     }
 }

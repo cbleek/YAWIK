@@ -12,13 +12,14 @@ namespace CoreTest\Factory\Navigation;
 
 use Core\Factory\Navigation\DefaultNavigationFactory;
 use CoreTestUtils\TestCase\TestInheritanceTrait;
-use Zend\Mvc\Router\RouteMatch;
+use Zend\Router\RouteMatch;
 
 /**
  * Tests for \Core\Factory\Navigation\DefaultNavigationFactory
  * 
  * @covers \Core\Factory\Navigation\DefaultNavigationFactory
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
+ * @author Anthonius Munthi <me@itstoni.com>
  *  
  */
 class DefaultNavigationFactoryTest extends \PHPUnit_Framework_TestCase
@@ -62,6 +63,32 @@ class DefaultNavigationFactoryTest extends \PHPUnit_Framework_TestCase
         $actual = $m->invoke($this->target, $pages, $routeMatch);
 
         $this->assertEquals($expect, $actual);
+    }
+
+    public function testDoesNothingIfNoRouteMatchIsPassed()
+    {
+        $pages = [
+            'page1' => [
+                'active_on' => 'matchedRouteName',
+            ],
+            'page2' => [
+                'active_on' => 'notMatchedRoute',
+            ],
+            'page3' => [
+                'active_on' => [ 'matchedRouteName', 'anotherRoute' ],
+            ],
+            'page4' => []
+        ];
+
+        $expect = $pages;
+
+        $m = new \ReflectionMethod($this->target, 'injectComponents');
+        $m->setAccessible(true);
+
+        $actual = $m->invoke($this->target, $pages, null);
+
+        $this->assertEquals($expect, $actual);
+
     }
 }
 

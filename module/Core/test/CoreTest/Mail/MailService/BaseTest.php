@@ -10,6 +10,7 @@
 /** */
 namespace CoreTest\Mail\MailService;
 
+use Core\Mail\HTMLTemplateMessage;
 use Core\Mail\MailService;
 use Core\Mail\MailServiceConfig;
 use Zend\Mail\Address;
@@ -63,7 +64,7 @@ class BaseTest extends \PHPUnit_Framework_TestCase
             'stringtemplate' => '\Core\Mail\StringTemplateMessage',
         );
         $factories = array(
-            'htmltemplate'   => '\Core\Mail\HTMLTemplateMessage::factory'
+            'htmltemplate'   => [HTMLTemplateMessage::class,'factory']
         );
 
         $this->assertAttributeEquals(false, 'shareByDefault', $target, 'shareByDefault is not set to FALSE');
@@ -87,11 +88,17 @@ class BaseTest extends \PHPUnit_Framework_TestCase
         $services = $this->getMockBuilder('\Zend\ServiceManager\ServiceManager')
                          ->disableOriginalConstructor()
                          ->getMock();
+        
 
-        $services->expects($this->once())->method('get')->with('translator')->willReturn($translator);
+        $services
+	        ->expects($this->once())
+	        ->method('get')
+	        ->with('translator')
+	        ->willReturn($translator)
+        ;
 
-        $target = new MailService($this->serviceManager, $config);
-        $target->setServiceLocator($services);
+        $target = new MailService($services,$config->toArray());
+        //$target->setServiceLocator($services);
 
         $mail = $target->get('testTranslatorMessage');
 
@@ -113,8 +120,8 @@ class BaseTest extends \PHPUnit_Framework_TestCase
         $message = new Message();
         $noMessage = new \stdClass();
 
-        $this->assertNull($target->validatePlugin($message));
-        $target->validatePlugin($noMessage);
+        $this->assertNull($target->validate($message));
+        $target->validate($noMessage);
 
     }
 

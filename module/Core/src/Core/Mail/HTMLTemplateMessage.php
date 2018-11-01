@@ -10,6 +10,7 @@
 
 namespace Core\Mail;
 
+use Interop\Container\ContainerInterface;
 use Zend\Mail\Header;
 use Zend\ServiceManager\ServiceLocatorInterface;
 use Zend\View\Model\ViewModel;
@@ -35,11 +36,18 @@ class HTMLTemplateMessage extends TranslatorAwareMessage
      */
     protected $variables = array();
 
-    /**
-     * @param ServiceLocatorInterface $serviceManager
-     * @param array $options
-     */
-    public function __construct(ServiceLocatorInterface $serviceManager, array $options = array())
+    protected $renderedBody;
+	
+	/**
+	 * HTMLTemplateMessage constructor.
+	 *
+	 * @param ContainerInterface $serviceManager
+	 * @param array $options
+	 */
+    public function __construct(
+    	ContainerInterface $serviceManager,
+	    array $options = array()
+    )
     {
         // @TODO make this multipart
         parent::__construct($options);
@@ -215,46 +223,56 @@ class HTMLTemplateMessage extends TranslatorAwareMessage
      * @return string
      * @throws \InvalidArgumentException the mail body must completely be provided by the template, any other attempt is a misconception that may leave the coder in an quagmire
      */
+    public function renderBodyText($force = true, $forceLanguage = null)
+    {
+        if (!$this->renderedBody || $force ) {
+            $viewModel    = new ViewModel();
+            $response     = new Response();
+            $body         = parent::getBodyText();
+            if (!empty($body)) {
+                throw new \InvalidArgumentException('mail body shall come from Template.');
+            }
+
+            /* @var \Zend\Mvc\View\Http\ViewManager $viewManager */
+            $viewManager  = $this->serviceManager->get('ViewManager');
+            $resolver = $this->serviceManager->get('ViewResolver');
+
+            /* @var \Zend\Mvc\MvcEvent $event */
+            $event = $this->serviceManager->get('Application')->getMvcEvent();
+            $lang = $forceLanguage ?: $event->getRouteMatch()->getParam('lang');
+
+
+            if ($resolver->resolve($this->getTemplate() . '.' . $lang)) {
+                $viewModel->setTemplate($this->getTemplate() . '.' . $lang);
+            }else{
+                $viewModel->setTemplate($this->getTemplate());
+            }
+
+            $view         = $viewManager->getView();
+
+            $viewModel->setVariables($this->getVariables());
+            $viewModel->setVariable('mail', $this);
+            $view->setResponse($response);
+            $view->render($viewModel);
+            $body = $response->getContent();
+
+            $this->renderedBody = $body;
+        }
+    }
+
     public function getBodyText()
     {
-        $viewModel    = new ViewModel();
-        $response     = new Response();
-        $body         = parent::getBodyText();
-        if (!empty($body)) {
-            throw new \InvalidArgumentException('mail body shall come from Template.');
-        }
-
-        /* @var \Zend\Mvc\View\Http\ViewManager $viewManager */
-        $viewManager  = $this->serviceManager->get('viewManager');
-        $resolver = $this->serviceManager->get('viewResolver');
-
-        /* @var \Zend\Mvc\MvcEvent $event */
-        $event = $this->serviceManager->get('application')->getMvcEvent();
-        $lang = $event->getRouteMatch()->getParam('lang');
-
-
-        if ($resolver->resolve($this->getTemplate() . '.' . $lang)) {
-            $viewModel->setTemplate($this->getTemplate() . '.' . $lang);
-        }else{
-            $viewModel->setTemplate($this->getTemplate());
-        }
-
-        $view         = $viewManager->getView();
-
-        $viewModel->setVariables($this->getVariables());
-        $view->setResponse($response);
-        $view->render($viewModel);
-        $body = $response->getContent();
-
-        return $body;
+        $this->renderBodyText();
+        return $this->renderedBody;
     }
-    
-    /**
-     * @param MailService $mailService
-     * @return \Core\Mail\HTMLTemplateMessage
-     */
-    public static function factory(MailService $mailService)
+	
+	/**
+	 * @param ContainerInterface $container
+	 *
+	 * @return static
+	 */
+    public static function factory(ContainerInterface $container)
     {
-        return new static($mailService->getServiceLocator());
+        return new static($container);
     }
 }

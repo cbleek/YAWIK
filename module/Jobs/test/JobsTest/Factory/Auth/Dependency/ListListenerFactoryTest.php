@@ -21,9 +21,9 @@ class ListListenerFactoryTest extends \PHPUnit_Framework_TestCase
 {
 
     /**
-     * @covers ::createService
+     * @covers ::__invoke
      */
-    public function testcreateService()
+    public function testInvokation()
     {
         $repository = $this->getMockBuilder(Repository::class)
             ->disableOriginalConstructor()
@@ -44,6 +44,6 @@ class ListListenerFactoryTest extends \PHPUnit_Framework_TestCase
             ->willReturn($repositories);
         
         $listListenerFactory = new ListListenerFactory();
-        $this->assertInstanceOf(ListListener::class, $listListenerFactory->createService($serviceLocator));
+        $this->assertInstanceOf(ListListener::class, $listListenerFactory->__invoke($serviceLocator,'irrelevant'));
     }
 }

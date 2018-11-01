@@ -11,50 +11,42 @@
 namespace Core\Paginator;
 
 use Core\Repository\RepositoryService;
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\MutableCreationOptionsInterface;
+use Interop\Container\ContainerInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+//use Zend\ServiceManager\MutableCreationOptionsInterface;
 use Zend\ServiceManager\ServiceLocatorInterface;
 use Zend\Paginator\Paginator;
 
 /**
  * Class PaginatorFactoryAbstract
- * @package Core\Paginator
+ *
+ *
+ * @since 0.30 - ZF3 compatibility
  */
-abstract class PaginatorFactoryAbstract implements FactoryInterface, MutableCreationOptionsInterface
+abstract class PaginatorFactoryAbstract implements FactoryInterface
 {
 
-    protected $options = [];
-
-    /**
-     * Set creation options
-     *
-     * @param  array $options
-     *
-     * @return void
-     */
-    public function setCreationOptions(array $options)
+    public function __invoke( ContainerInterface $container, $requestedName, array $options = null )
     {
-        $this->options = $options;
+	    /* @var PaginatorService $paginatorService */
+	    /* @var RepositoryService $repositories */
+	    $repositories   = $container->get('repositories');
+	    $repository     = $repositories->get($this->getRepository());
+	    $queryBuilder   = $repository->createQueryBuilder();
+	    $filter         = $container->get('FilterManager')->get($this->getFilter());
+	    $adapter        = new \Core\Paginator\Adapter\DoctrineMongoLateCursor($queryBuilder, $filter, $options);
+	    $service        = new Paginator($adapter);
+	
+	    return $service;
     }
-
-
-    /**
-     * @param ServiceLocatorInterface $serviceLocator
+	
+	/**
+     * @param ContainerInterface $serviceLocator
      * @return mixed|Paginator
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function createService(ContainerInterface $container)
     {
-        /* @var PaginatorService $serviceLocator */
-        /* @var RepositoryService $repositories */
-        $repositories   = $serviceLocator->getServiceLocator()->get('repositories');
-        $repository     = $repositories->get($this->getRepository());
-        $queryBuilder   = $repository->createQueryBuilder();
-        $filter         = $serviceLocator->getServiceLocator()->get('filterManager')->get($this->getFilter());
-        $adapter       = new \Core\Paginator\Adapter\DoctrineMongoLateCursor($queryBuilder, $filter, $this->options);
-        $service        = new Paginator($adapter);
-
-        $this->setCreationOptions([]);
-        return $service;
+        return $this($container, get_class($this));
     }
 
     /**

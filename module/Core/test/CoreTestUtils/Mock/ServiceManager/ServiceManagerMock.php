@@ -19,6 +19,8 @@ use Zend\ServiceManager\ServiceManager;
  * Allows tracking of method calls (with service name arguments).
  *
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
+ * @author Anthonius Munthi <me@itstoni.com>
+ *
  * @since  0.25
  */
 class ServiceManagerMock extends ServiceManager
@@ -30,23 +32,10 @@ class ServiceManagerMock extends ServiceManager
 
     protected $expectedCallCount = [];
 
-    public function setService($name, $service)
-    {
-        /*
-         * No checks here to not pollute the "has" method invokation counter.
-         * If you mess up here, your test config must be checked.
-         */
-        $cName = $this->canonicalizeName($name);
-        $this->instances[$cName] = $service;
-
-        return $this;
-    }
-
-
     public function get($name, $usePeeringServiceManagers = true)
     {
         $this->incrementCallCount('get', $name);
-
+	
         return parent::get($name, $usePeeringServiceManagers);
     }
 

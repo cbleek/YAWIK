@@ -1,36 +1,87 @@
 <?php
-//: ./src/Jobs/Form/JobboardSearch.php:53
-translate('Location');
+//: ./src/Jobs/Listener/MailSender.php:92
+translate('A new job opening was created');
 
-//: ./src/Jobs/Form/JobboardSearch.php:82
-translate('Distance');
+//: ./src/Jobs/Listener/MailSender.php:98
+translate('Your Job have been wrapped up for approval');
 
-//: ./src/Jobs/Form/JobboardSearch.php:97
-translate('Distance');
+//: ./src/Jobs/Listener/MailSender.php:114
+translate('Your job has been published');
 
-//: ./src/Jobs/Form/ListFilterPersonalFieldset.php:38
-translate('Show all jobs');
+//: ./src/Jobs/Listener/MailSender.php:128
+translate('Your job has been rejected');
 
-//: ./src/Jobs/Form/ListFilterPersonalFieldset.php:39
-translate('Show my jobs');
+//: ./src/Jobs/Listener/AdminWidgetProvider.php:41
+translate('Total jobs');
 
-//: ./src/Jobs/Form/ListFilterPersonalFieldset.php:55
-translate('All');
+//: ./src/Jobs/Listener/AdminWidgetProvider.php:45
+translate('Active jobs');
 
-//: ./src/Jobs/Form/ListFilterPersonalFieldset.php:56
-translate('Active');
+//: ./src/Jobs/Listener/AdminWidgetProvider.php:49
+translate('Pending jobs');
 
-//: ./src/Jobs/Form/ListFilterPersonalFieldset.php:57
-translate('Inactive');
+//: ./src/Jobs/Entity/StatusInterface.php:24
+translate('created');
 
-//: ./src/Jobs/Form/JobDescriptionFieldset.php:50
-translate('Job qualification');
+//: ./src/Jobs/Entity/StatusInterface.php:29
+translate('waiting for approval');
 
-//: ./src/Jobs/Form/JobDescriptionFieldset.php:60
-translate('Job benefits');
+//: ./src/Jobs/Entity/StatusInterface.php:34
+translate('rejected');
 
-//: ./src/Jobs/Form/JobDescriptionFieldset.php:71
-translate('Job requirements');
+//: ./src/Jobs/Entity/StatusInterface.php:39
+translate('publish');
+
+//: ./src/Jobs/Entity/StatusInterface.php:44
+translate('active');
+
+//: ./src/Jobs/Entity/StatusInterface.php:49
+translate('inactive');
+
+//: ./src/Jobs/Entity/StatusInterface.php:54
+translate('expired');
+
+//: ./src/Jobs/Controller/ManageController.php:425
+translate('Status successfully changed.');
+
+//: ./src/Jobs/Controller/ManageController.php:427
+translate('Change status failed.');
+
+//: ./src/Jobs/Controller/ManageController.php:572
+translate('Changes were rejected by %s');
+
+//: ./src/Jobs/Controller/ManageController.php:581
+translate('Job opening was rejected by %s');
+
+//: ./src/Jobs/Controller/ManageController.php:592
+translate('Job has been rejected');
+
+//: ./src/Jobs/Controller/ManageController.php:603
+translate('Job opening was activated by %s');
+
+//: ./src/Jobs/Controller/ManageController.php:608
+translate('Job has been approved');
+
+//: ./src/Jobs/Controller/ManageController.php:651
+translate('Job was deactivated by %s');
+
+//: ./src/Jobs/Controller/ManageController.php:652
+translate('Job has been deactivated');
+
+//: ./src/Jobs/Controller/ManageController.php:654
+translate('Job could not be deactivated');
+
+//: ./src/Jobs/Controller/ManageController.php:667
+translate('Job has been deleted.');
+
+//: ./src/Jobs/Controller/ManageController.php:682
+translate('Template changed');
+
+//: ./src/Jobs/Controller/ManageController.php:684
+translate('Template not changed');
+
+//: ./src/Jobs/Form/JobDescriptionHtml.php:52
+translate('Enter pure html code here');
 
 //: ./src/Jobs/Form/PreviewFieldset.php:48
 translate('Terms and conditions');
@@ -41,26 +92,38 @@ translate('I have read the %s and accept it');
 //: ./src/Jobs/Form/PreviewFieldset.php:50
 translate('terms an conditions');
 
-//: ./src/Jobs/Form/Base.php:22
-translate('Title and job location');
+//: ./src/Jobs/Form/ClassificationsFieldset.php:52
+translate('Select the professions of the job opening. This allows an applicant to find job openings by a certain profession.');
 
-//: ./src/Jobs/Form/CompanyName.php:37
-translate('Companyname');
+//: ./src/Jobs/Form/ClassificationsFieldset.php:53
+translate('Professions');
 
-//: ./src/Jobs/Form/CustomerNote.php:25
-translate('Customer note');
+//: ./src/Jobs/Form/ClassificationsFieldset.php:73
+translate('Industries');
 
-//: ./src/Jobs/Form/MultipostButtonFieldset.php:31
-translate('Calculate price');
+//: ./src/Jobs/Form/ClassificationsFieldset.php:74
+translate('Select the industry of the hiring organization. This allows an applicant to search for job opening by industry.');
 
-//: ./src/Jobs/Form/AdminSearchFormElementsFieldset.php:30
-translate('search for position or company');
+//: ./src/Jobs/Form/ClassificationsFieldset.php:93
+translate('Employment Types');
 
-//: ./src/Jobs/Form/AdminSearchFormElementsFieldset.php:56
-translate('Companyname');
+//: ./src/Jobs/Form/ClassificationsFieldset.php:94
+translate('Manage the employment types you want to assign to jobs.');
 
-//: ./src/Jobs/Form/AdminSearchFormElementsFieldset.php:60
-translate('Select hiring organization');
+//: ./src/Jobs/Form/BaseFieldset.php:91
+translate('Job title');
+
+//: ./src/Jobs/Form/BaseFieldset.php:92
+translate('Please enter the job title');
+
+//: ./src/Jobs/Form/BaseFieldset.php:103
+translate('Location');
+
+//: ./src/Jobs/Form/BaseFieldset.php:104
+translate('Please enter the location of the job');
+
+//: ./src/Jobs/Form/MultipostFieldset.php:49
+translate('Portals');
 
 //: ./src/Jobs/Form/ListFilterAdminFieldset.php:36
 translate('All');
@@ -92,32 +155,83 @@ translate('Companyname');
 //: ./src/Jobs/Form/ListFilterAdminFieldset.php:63
 translate('Select hiring organization');
 
-//: ./src/Jobs/Form/Job.php:71
-translate('Please choose a descriptive title and a location for your job posting ');
+//: ./src/Jobs/Form/JobboardSearch.php:57
+translate('Distance');
 
-//: ./src/Jobs/Form/Job.php:80
-translate('Please choose the name of the hiring organization. The selected name defines the template of the job opening.');
+//: ./src/Jobs/Form/JobboardSearch.php:71
+translate('Distance');
 
-//: ./src/Jobs/Form/Job.php:88
-translate('Classify the job.');
+//: ./src/Jobs/Form/JobDescriptionFieldset.php:50
+translate('Job qualification');
 
-//: ./src/Jobs/Form/Job.php:97
-translate('Please choose the portals, where you wish to publish your job opening.');
+//: ./src/Jobs/Form/JobDescriptionFieldset.php:60
+translate('Job benefits');
 
-//: ./src/Jobs/Form/Job.php:106
-translate('If there si something you want us to know about this job offering, you can type it here.');
+//: ./src/Jobs/Form/JobDescriptionFieldset.php:71
+translate('Job requirements');
 
-//: ./src/Jobs/Form/AdminSearchForm.php:26
-translate('search for position or company');
+//: ./src/Jobs/Form/MultipostButtonFieldset.php:31
+translate('Calculate price');
 
-//: ./src/Jobs/Form/AdminSearchForm.php:52
+//: ./src/Jobs/Form/CompanyName.php:37
 translate('Companyname');
 
-//: ./src/Jobs/Form/AdminSearchForm.php:55
+//: ./src/Jobs/Form/AdminSearchFormElementsFieldset.php:30
+translate('Job title');
+
+//: ./src/Jobs/Form/AdminSearchFormElementsFieldset.php:57
+translate('Companyname');
+
+//: ./src/Jobs/Form/AdminSearchFormElementsFieldset.php:61
 translate('Select hiring organization');
 
-//: ./src/Jobs/Form/ListFilterBaseFieldset.php:48
-translate('Job title');
+//: ./src/Jobs/Form/AdminJobEdit.php:28
+translate('Change status or publish date.%1$s%2$sBeware!%3$s Status changes will eventually cause notification emails to be send.');
+
+//: ./src/Jobs/Form/AdminJobEdit.php:41
+translate('Start date');
+
+//: ./src/Jobs/Form/AdminJobEdit.php:42
+translate('Set the start date of this job.');
+
+//: ./src/Jobs/Form/ListFilterLocationFieldset.php:46
+translate('Location');
+
+//: ./src/Jobs/Form/ListFilterLocationFieldset.php:57
+translate('Distance');
+
+//: ./src/Jobs/Form/ListFilterLocationFieldset.php:71
+translate('Distance');
+
+//: ./src/Jobs/Form/Job.php:63
+translate('Basic Data');
+
+//: ./src/Jobs/Form/Job.php:65
+translate('Basic Data');
+
+//: ./src/Jobs/Form/Job.php:75
+translate('Please choose a descriptive title and a location for your job posting ');
+
+//: ./src/Jobs/Form/Job.php:84
+translate('Please choose the name of the hiring organization. The selected name defines the template of the job opening.');
+
+//: ./src/Jobs/Form/Job.php:92
+translate('Classify the job.');
+
+//: ./src/Jobs/Form/Job.php:101
+translate('Please choose the portals, where you wish to publish your job opening.');
+
+//: ./src/Jobs/Form/Job.php:110
+translate('If there is something you want us to know about this job offering, you can type it here.');
+
+//: ./src/Jobs/Form/Job.php:119
+translate('Create job opening');
+
+//: ./src/Jobs/Form/Job.php:131
+translate('Preview');
+
+//: ./src/Jobs/Form/Validator/UniqueApplyId.php:21
+translate('The apply identifier "%value%" is already in use.');
 
 //: ./src/Jobs/Form/Element/StatusSelect.php:27
 translate('Active');
@@ -155,14 +269,74 @@ translate('Select a job status.');
 //: ./src/Jobs/Form/Element/StatusSelect.php:85
 translate('All');
 
-//: ./src/Jobs/Form/CompanyNameFieldset.php:33
+//: ./src/Jobs/Form/Base.php:22
+translate('Title and job location');
+
+//: ./src/Jobs/Form/ListFilterBaseFieldset.php:48
+translate('Job title');
+
+//: ./src/Jobs/Form/ListFilterPersonalFieldset.php:38
+translate('Show all jobs');
+
+//: ./src/Jobs/Form/ListFilterPersonalFieldset.php:39
+translate('Show my jobs');
+
+//: ./src/Jobs/Form/ListFilterPersonalFieldset.php:55
+translate('All');
+
+//: ./src/Jobs/Form/ListFilterPersonalFieldset.php:56
+translate('Active');
+
+//: ./src/Jobs/Form/ListFilterPersonalFieldset.php:57
+translate('Inactive');
+
+//: ./src/Jobs/Form/CompanyNameFieldset.php:62
 translate('Companyname');
 
-//: ./src/Jobs/Form/CompanyNameFieldset.php:36
+//: ./src/Jobs/Form/CompanyNameFieldset.php:65
 translate('Select hiring organization');
+
+//: ./src/Jobs/Form/CompanyNameFieldset.php:77
+translate('There are department managers assigned to your organization. Please select the department manager, who will receive notifications for incoming applications');
+
+//: ./src/Jobs/Form/CompanyNameFieldset.php:78
+translate('Choose Managers');
+
+//: ./src/Jobs/Form/Multipost.php:31
+translate('Multiposting');
 
 //: ./src/Jobs/Form/ClassificationsForm.php:25
 translate('Classifications');
+
+//: ./src/Jobs/Form/CustomerNote.php:25
+translate('Customer note');
+
+//: ./src/Jobs/Form/CategoriesContainer.php:30
+translate('Professions');
+
+//: ./src/Jobs/Form/CategoriesContainer.php:40
+translate('Manage the professions you want to assign to jobs.');
+
+//: ./src/Jobs/Form/CategoriesContainer.php:41
+translate('The order of categories can be modified by drag&drop.');
+
+//: ./src/Jobs/Form/CategoriesContainer.php:49
+translate('Industries');
+
+//: ./src/Jobs/Form/CategoriesContainer.php:59
+translate('Manage the industries you want to assign to jobs.');
+
+//: ./src/Jobs/Form/CategoriesContainer.php:60
+translate('The order of categories can be modified by drag&drop.');
+
+//: ./src/Jobs/Form/CategoriesContainer.php:68
+translate('Employment Types');
+
+//: ./src/Jobs/Form/CategoriesContainer.php:78
+translate('Manage the employment types you want to assign to jobs.');
+
+//: ./src/Jobs/Form/CategoriesContainer.php:79
+translate('The order of categories can be modified by drag&drop.');
 
 //: ./src/Jobs/Form/JobDescriptionDescription.php:53
 translate('Enter optional company description here');
@@ -194,131 +368,86 @@ translate('One click apply');
 //: ./src/Jobs/Form/AtsModeFieldset.php:118
 translate('Social profiles');
 
-//: ./src/Jobs/Form/CategoriesContainer.php:40
-translate('Manage the professions you want to assign to jobs.');
-
-//: ./src/Jobs/Form/CategoriesContainer.php:58
-translate('Manage the employment types you want to assign to jobs.');
-
-//: ./src/Jobs/Form/Validator/UniqueApplyId.php:21
-translate('The apply identifier "%value%" is already in use.');
-
-//: ./src/Jobs/Form/ClassificationsFieldset.php:52
-translate('Professions');
-
-//: ./src/Jobs/Form/ClassificationsFieldset.php:71
-translate('Employment Types');
-
-//: ./src/Jobs/Form/AdminJobEdit.php:28
-translate('Change status or publish date.%1$s%2$sBeware!%3$s Status changes will eventually cause notification emails to be send.');
-
-//: ./src/Jobs/Form/AdminJobEdit.php:41
-translate('Start date');
-
-//: ./src/Jobs/Form/AdminJobEdit.php:42
-translate('Set the start date of this job.');
-
-//: ./src/Jobs/Form/ListFilterLocationFieldset.php:46
-translate('Location');
-
-//: ./src/Jobs/Form/ListFilterLocationFieldset.php:57
-translate('Distance');
-
-//: ./src/Jobs/Form/ListFilterLocationFieldset.php:71
-translate('Distance');
-
-//: ./src/Jobs/Form/BaseFieldset.php:61
+//: ./src/Jobs/Options/BaseFieldsetOptions.php:39
 translate('Job title');
 
-//: ./src/Jobs/Form/BaseFieldset.php:62
+//: ./src/Jobs/Options/BaseFieldsetOptions.php:40
 translate('Please enter the job title');
 
-//: ./src/Jobs/Form/BaseFieldset.php:72
+//: ./src/Jobs/Options/BaseFieldsetOptions.php:50
 translate('Location');
 
-//: ./src/Jobs/Form/BaseFieldset.php:73
+//: ./src/Jobs/Options/BaseFieldsetOptions.php:51
 translate('Please enter the location of the job');
 
-//: ./src/Jobs/Form/MultipostFieldset.php:49
-translate('Portals');
+//: ./src/Jobs/Options/BaseFieldsetOptions.php:65
+translate('please select');
 
-//: ./src/Jobs/Form/Multipost.php:31
-translate('Multiposting');
+//: ./test/JobsTest/Form/CategoriesContainerTest.php:45
+translate('Professions');
 
-//: ./src/Jobs/Entity/StatusInterface.php:24
-translate('created');
+//: ./test/JobsTest/Form/CategoriesContainerTest.php:63
+translate('Industries');
 
-//: ./src/Jobs/Entity/StatusInterface.php:29
-translate('waiting for approval');
+//: ./test/JobsTest/Form/CategoriesContainerTest.php:81
+translate('Employment Types');
 
-//: ./src/Jobs/Entity/StatusInterface.php:34
-translate('rejected');
+//: ./test/JobsTest/Form/ListFilterPersonalTest.php:37
+translate('Show all jobs');
 
-//: ./src/Jobs/Entity/StatusInterface.php:39
-translate('publish');
+//: ./test/JobsTest/Form/ListFilterPersonalTest.php:38
+translate('Show my jobs');
 
-//: ./src/Jobs/Entity/StatusInterface.php:44
-translate('active');
+//: ./test/JobsTest/Form/ListFilterPersonalTest.php:51
+translate('All');
 
-//: ./src/Jobs/Entity/StatusInterface.php:49
-translate('inactive');
+//: ./test/JobsTest/Form/ListFilterPersonalTest.php:52
+translate('Active');
 
-//: ./src/Jobs/Entity/StatusInterface.php:54
-translate('expired');
+//: ./test/JobsTest/Form/ListFilterPersonalTest.php:53
+translate('Inactive');
 
-//: ./src/Jobs/Controller/ManageController.php:359
-translate('Status successfully changed.');
+//: ./test/JobsTest/Form/BaseFieldsetTest.php:48
+translate('Job title');
 
-//: ./src/Jobs/Controller/ManageController.php:361
-translate('Change status failed.');
+//: ./test/JobsTest/Form/BaseFieldsetTest.php:49
+translate('Please enter the job title');
 
-//: ./src/Jobs/Controller/ManageController.php:496
-translate('Job opening was rejected by %s');
+//: ./test/JobsTest/Form/BaseFieldsetTest.php:58
+translate('Location');
 
-//: ./src/Jobs/Controller/ManageController.php:500
-translate('Job has been rejected');
+//: ./test/JobsTest/Form/BaseFieldsetTest.php:59
+translate('Please enter the location of the job');
 
-//: ./src/Jobs/Controller/ManageController.php:504
-translate('Job opening was activated by %s');
+//: ./test/JobsTest/Form/ListFilterBaseTest.php:41
+translate('Job title');
 
-//: ./src/Jobs/Controller/ManageController.php:509
-translate('Job has been approved');
+//: ./config/module.config.php:148
+translate('Jobs');
 
-//: ./src/Jobs/Controller/ManageController.php:553
-translate('Job was deactivated by %s');
+//: ./config/module.config.php:158
+translate('Jobs categories');
 
-//: ./src/Jobs/Controller/ManageController.php:554
-translate('Job has been deactivated');
+//: ./config/module.config.php:164
+translate('Jobboard');
 
-//: ./src/Jobs/Controller/ManageController.php:556
-translate('Job could not be deactivated');
+//: ./config/module.config.php:170
+translate('Jobs');
 
-//: ./src/Jobs/Controller/ManageController.php:572
-translate('Template changed');
+//: ./config/module.config.php:176
+translate('Overview');
 
-//: ./src/Jobs/Controller/ManageController.php:574
-translate('Template not changed');
-
-//: ./src/Jobs/Listener/AdminWidgetProvider.php:41
-translate('Total jobs');
-
-//: ./src/Jobs/Listener/AdminWidgetProvider.php:45
-translate('Active jobs');
-
-//: ./src/Jobs/Listener/AdminWidgetProvider.php:49
+//: ./config/module.config.php:181
 translate('Pending jobs');
 
-//: ./src/Jobs/Listener/MailSender.php:89
-translate('A new job opening was created');
+//: ./config/module.config.php:186
+translate('Create job');
 
-//: ./src/Jobs/Listener/MailSender.php:95
-translate('Your Job have been wrapped up for approval');
+//: ./config/module.config.php:195
+translate('Edit job');
 
-//: ./src/Jobs/Listener/MailSender.php:109
-translate('Your job has been published');
-
-//: ./src/Jobs/Listener/MailSender.php:123
-translate('Your job has been rejected');
+//: ./config/module.config.php:202
+translate('Jobboard');
 
 //: ./config/channel.options.local.php.dist:16
 translate('publish your job on yawik.org for free');
@@ -340,73 +469,4 @@ translate('enable %s of this job on your Homepage');
 
 //: ./config/channel.options.local.php.dist:59
 translate('integration');
-
-//: ./config/module.config.php:135
-translate('Jobs');
-
-//: ./config/module.config.php:142
-translate('Jobs categories');
-
-//: ./config/module.config.php:148
-translate('Jobboard');
-
-//: ./config/module.config.php:154
-translate('Jobs');
-
-//: ./config/module.config.php:160
-translate('Overview');
-
-//: ./config/module.config.php:165
-translate('Pending jobs');
-
-//: ./config/module.config.php:170
-translate('Create job');
-
-//: ./config/module.config.php:179
-translate('Edit job');
-
-//: ./config/module.config.php:186
-translate('Jobboard');
-
-//: ./test/JobsTest/Form/ClassificationsFieldsetTest.php:67
-translate('Professions');
-
-//: ./test/JobsTest/Form/ClassificationsFieldsetTest.php:84
-translate('Employment Types');
-
-//: ./test/JobsTest/Form/BaseFieldsetTest.php:58
-translate('Job title');
-
-//: ./test/JobsTest/Form/BaseFieldsetTest.php:59
-translate('Please enter the job title');
-
-//: ./test/JobsTest/Form/BaseFieldsetTest.php:68
-translate('Location');
-
-//: ./test/JobsTest/Form/BaseFieldsetTest.php:69
-translate('Please enter the location of the job');
-
-//: ./test/JobsTest/Form/CategoriesContainerTest.php:55
-translate('Manage the professions you want to assign to jobs.');
-
-//: ./test/JobsTest/Form/CategoriesContainerTest.php:73
-translate('Manage the employment types you want to assign to jobs.');
-
-//: ./test/JobsTest/Form/ListFilterPersonalTest.php:37
-translate('Show all jobs');
-
-//: ./test/JobsTest/Form/ListFilterPersonalTest.php:38
-translate('Show my jobs');
-
-//: ./test/JobsTest/Form/ListFilterPersonalTest.php:51
-translate('All');
-
-//: ./test/JobsTest/Form/ListFilterPersonalTest.php:52
-translate('Active');
-
-//: ./test/JobsTest/Form/ListFilterPersonalTest.php:53
-translate('Inactive');
-
-//: ./test/JobsTest/Form/ListFilterBaseTest.php:41
-translate('Job title');
 

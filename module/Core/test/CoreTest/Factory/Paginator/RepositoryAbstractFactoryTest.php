@@ -11,6 +11,7 @@
 namespace CoreTest\Factory\Paginator;
 
 use Core\Factory\Paginator\RepositoryAbstractFactory;
+use Zend\ServiceManager\AbstractPluginManager;
 
 /**
  * Tests for \Core\Factory\Paginator\RepositoryAbstractFactory
@@ -35,22 +36,7 @@ class RepositoryAbstractFactoryTest extends \PHPUnit_Framework_TestCase
      */
     public function testImplementsInterfaces()
     {
-        $this->assertInstanceOf('\Zend\ServiceManager\AbstractFactoryInterface', $this->target);
-        $this->assertInstanceOf('\Zend\ServiceManager\MutableCreationOptionsInterface', $this->target);
-    }
-
-    public function testDefaultCreationOptionsAreEmpty()
-    {
-        $this->assertAttributeEquals([], 'options', $this->target);
-    }
-
-    public function testAllowsSettingCreationOption()
-    {
-        $options = [ 'testOption' => 'testValue' ];
-
-        $this->target->setCreationOptions($options);
-
-        $this->assertAttributeEquals($options, 'options', $this->target);
+        $this->assertInstanceOf('\Zend\ServiceManager\Factory\AbstractFactoryInterface', $this->target);
     }
 
     public function serviceNamesProvider()
@@ -73,7 +59,10 @@ class RepositoryAbstractFactoryTest extends \PHPUnit_Framework_TestCase
      */
     public function testCanCreateService($serviceName, $expected)
     {
-        $sm = $this->getMockForAbstractClass('\Zend\ServiceManager\AbstractPluginManager');
+        $sm = $this->getMockBuilder(AbstractPluginManager::class)
+	        ->disableOriginalConstructor()
+	        ->getMock()
+        ;
         $method = "assert" . ($expected ? 'True' : 'False');
 
         $this->{$method}($this->target->canCreate($sm, $serviceName));
@@ -132,17 +121,10 @@ class RepositoryAbstractFactoryTest extends \PHPUnit_Framework_TestCase
                                        ->withConsecutive([ 'repositories' ], [ 'FilterManager'])
                                        ->will($this->onConsecutiveCalls($repositories, $filters));
 
-        $pm = $this->getMockBuilder('\Core\Paginator\PaginatorService')
-                   ->disableOriginalConstructor()->getMock();
-
-        $pm->expects($this->once())->method('getServiceLocator')->willReturn($sm);
-
         $target = $this->target;
-        $target->setCreationOptions($options);
-        $paginator = $target($pm,$serviceName);
+        $paginator = $target($sm,$serviceName, $options);
 
         $this->assertInstanceOf('\Zend\Paginator\Paginator', $paginator, 'No Paginator returned.');
-        $this->assertAttributeEquals([], 'options', $target, 'Cleaning creation options did not work.');
         $adapter = $paginator->getAdapter();
 
         $this->assertInstanceOf('\Core\Paginator\Adapter\DoctrineMongoCursor', $adapter, 'Adapter is not correct class instance.');

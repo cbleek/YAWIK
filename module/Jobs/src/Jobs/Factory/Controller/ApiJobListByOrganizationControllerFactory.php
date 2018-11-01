@@ -11,8 +11,8 @@ namespace Jobs\Factory\Controller;
 
 use Interop\Container\ContainerInterface;
 use Jobs\Controller\ApiJobListByOrganizationController;
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Zend\InputFilter\InputFilter;
 
 class ApiJobListByOrganizationControllerFactory implements FactoryInterface
 {
@@ -27,29 +27,23 @@ class ApiJobListByOrganizationControllerFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $repositories = $container->get('repositories');
-
         /** @var \Jobs\Repository\Job $jobRepository */
-        $jobRepository = $repositories->get('Jobs');
+        $jobRepository = $container->get('repositories')->get('Jobs/Job');
 
         /** @var \Jobs\Model\ApiJobDehydrator $apiJobDehydrator */
         $apiJobDehydrator = $container->get('Jobs\Model\ApiJobDehydrator');
 
-        $controller = new ApiJobListByOrganizationController($jobRepository, $apiJobDehydrator);
+        $inputFilter = new InputFilter();
+        $inputFilter->add([
+                            'name' => 'callback',
+                            'filters'  => [
+                                ['name' => 'StringTrim'],
+                                ['name' => 'Alpha'],
+                            ],
+                          ]);
+
+        $controller = new ApiJobListByOrganizationController($jobRepository, $apiJobDehydrator, $inputFilter);
 
         return $controller;
-    }
-
-    /**
-     * Create service
-     *
-     * @param ServiceLocatorInterface $serviceLocator
-     *
-     * @return ApiJobListByOrganizationController
-     */
-    public function createService(ServiceLocatorInterface $serviceLocator)
-    {
-        /* @var $serviceLocator \Zend\Mvc\Controller\PluginManager */
-        return $this($serviceLocator->getServiceLocator(), ApiJobListByOrganizationController::class);
     }
 }

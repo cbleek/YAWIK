@@ -10,7 +10,10 @@
 /** Applications controller */
 namespace Applications\Controller;
 
+use Applications\Form\ApplicationsFilter;
 use Applications\Listener\Events\ApplicationEvent;
+use Core\Repository\RepositoryService;
+use Interop\Container\ContainerInterface;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
 use Zend\View\Model\JsonModel;
@@ -27,22 +30,70 @@ use Applications\Entity\Application;
  */
 class ManageController extends AbstractActionController
 {
-    /**
-     * attaches further Listeners for generating / processing the output
-     *
-     * @return $this
-     */
-    public function attachDefaultListeners()
-    {
-        parent::attachDefaultListeners();
-        $serviceLocator  = $this->serviceLocator;
-        $defaultServices = $serviceLocator->get('DefaultListeners');
-        $events          = $this->getEventManager();
-        $events->attach($defaultServices);
-        return $this;
-    }
-
-    /**
+	/**
+	 * @var RepositoryService
+	 */
+	private $repositories;
+	
+	/**
+	 * @var
+	 */
+	private $coreNavigation;
+	
+	private $forms;
+	
+	private $appOptions;
+	
+	private $appEvents;
+	
+	private $translator;
+	
+	private $container;
+	
+	/**
+	 * ManageController constructor.
+	 *
+	 * @param RepositoryService $repositories
+	 */
+	public function __construct(
+		RepositoryService $repositories,
+		$coreNavigation,
+		$forms,
+		$appOptions,
+		$appEvents,
+		$translator,
+		$container
+	)
+	{
+		$this->repositories     = $repositories;
+		$this->coreNavigation   = $coreNavigation;
+		$this->forms            = $forms;
+		$this->appOptions       = $appOptions;
+		$this->appEvents        = $appEvents;
+		$this->translator       = $translator;
+		$this->container         = $container;
+	}
+	
+	/**
+	 * @param ContainerInterface $container
+	 *
+	 * @return ManageController
+	 */
+	static public function factory(ContainerInterface $container)
+	{
+		$ob = new self(
+			$container->get('Core/RepositoryService'),
+			$container->get('Core/Navigation'),
+			$container->get('forms'),
+			$container->get('Applications/Options'),
+			$container->get('Applications/Events'),
+			$container->get('translator'),
+			$container
+		);
+		return $ob;
+	}
+	
+	/**
      * (non-PHPdoc)
      * @see \Zend\Mvc\Controller\AbstractActionController::onDispatch()
      */
@@ -63,46 +114,14 @@ class ManageController extends AbstractActionController
      */
     public function indexAction()
     {
-        $services              = $this->serviceLocator;
-        /* @var \Jobs\Repository\Job $jobRepository */
-        $jobRepository         = $services->get('repositories')->get('Jobs/Job');
-        /* @var \Applications\Repository\Application $applicationRepository */
-        $applicationRepository = $services->get('repositories')->get('Applications/Application');
-        $services_form         = $services->get('forms');
-        /* @var \Applications\Form\FilterApplication $form */
-        $form                  = $services_form->get('Applications/Filter');
-        $params                = $this->getRequest()->getQuery();
-        /* @var \Zend\Form\Element\Select $statusElement */
-        $statusElement         = $form->get('status');
-
-        $states                = $applicationRepository->getStates()->toArray();
-        $states                = array_merge(array(/*@translate*/ 'all'), $states);
-        
-        $statesForSelections = array();
-        foreach ($states as $state) {
-            $statesForSelections[$state] = $state;
-        }
-        $statusElement->setValueOptions($statesForSelections);
-        
-        $job = $params->job ? $jobRepository->find($params->job)  : null;
-        $paginator = $this->paginator('Applications');
-
-        if ($job) {
-            $params['job_title'] = '[' . $job->getApplyId() . '] ' . $job->getTitle();
-        }
-
-        $form->bind($params);
-                
-        return array(
-            'form' => $form,
-            'applications' => $paginator,
-            'byJobs' => 'jobs' == $params->get('by', 'me'),
-            'sort' => $params->get('sort', 'none'),
-            'search' => $params->get('search', ''),
-            'job' => $job,
-            'applicationStates' => $states,
-            'applicationState' => $params->get('status', '')
-        );
+        return $this->pagination([
+                'params' => ['Application_List', ['q', 'job', 'page' => 1, 'unread', 'status' => 'all']],
+                'paginator' => ['Applications', 'as' => 'applications'],
+                'form' => [
+                    ApplicationsFilter::class,
+                    'as' => 'form'
+                ],
+            ]);
     }
 
     /**
@@ -116,12 +135,12 @@ class ManageController extends AbstractActionController
             return $this->refreshRatingAction();
         }
         
-        $nav = $this->serviceLocator->get('Core/Navigation');
+        $nav = $this->coreNavigation;
         $page = $nav->findByRoute('lang/applications');
         $page->setActive();
 
         /* @var \Applications\Repository\Application$repository */
-        $repository = $this->serviceLocator->get('repositories')->get('Applications/Application');
+        $repository = $this->repositories->get('Applications/Application');
         /* @var Application $application */
         $application = $repository->find($this->params('id'));
         
@@ -171,8 +190,7 @@ class ManageController extends AbstractActionController
                         $viewModel = new JsonModel();
                         $viewModel->setVariables(
                             /*array(
-                            'application' => */$this->serviceLocator
-                                              ->get('builders')
+                            'application' => */$this->builders
                                               ->get('JsonApplication')
                                               ->unbuild($application)
                         );
@@ -180,7 +198,8 @@ class ManageController extends AbstractActionController
                         $return = $viewModel;
                 break;
             case 'pdf':
-                $pdf = $this->serviceLocator->get('Core/html2pdf');
+            	// @TODO: [ZF3] Refactor this so we can inject Core/Html2Pdf service during controller creation
+	            $pdf = $this->container->get('Core/Html2Pdf');
                 $return['format'] = $format;
                 break;
             default:
@@ -191,13 +210,13 @@ class ManageController extends AbstractActionController
                 $return = new ViewModel($return);
                 $return->addChild($actionButtons, 'externActionButtons');
                 
-                $allowSubsequentAttachmentUpload = $this->serviceLocator->get('Applications/Options')
+                $allowSubsequentAttachmentUpload = $this->appOptions
                     ->getAllowSubsequentAttachmentUpload();
                 
                 if ($allowSubsequentAttachmentUpload
                     && $this->acl($application, Application::PERMISSION_SUBSEQUENT_ATTACHMENT_UPLOAD, 'test')
                 ) {
-                    $attachmentsForm = $this->serviceLocator->get('forms')
+                    $attachmentsForm = $this->forms
                         ->get('Applications/Attachments');
                     $attachmentsForm->bind($application->getAttachments());
                     
@@ -248,7 +267,7 @@ class ManageController extends AbstractActionController
         $model = new ViewModel();
         $model->setTemplate('applications/manage/_rating');
         
-        $application = $this->serviceLocator->get('repositories')->get('Applications/Application')
+        $application = $this->repositories->get('Applications/Application')
                         ->find($this->params('id', 0));
         
         if (!$application) {
@@ -268,7 +287,7 @@ class ManageController extends AbstractActionController
     public function socialProfileAction()
     {
         if ($spId = $this->params()->fromQuery('spId')) {
-            $repositories = $this->serviceLocator->get('repositories');
+            $repositories = $this->repositories;
             $repo = $repositories->get('Applications/Application');
             $profile = $repo->findProfile($this->params()->fromQuery('spId'));
             if (!$profile) {
@@ -301,7 +320,7 @@ class ManageController extends AbstractActionController
     {
         $applicationId = $this->params('id');
         /* @var \Applications\Repository\Application $repository */
-        $repository    = $this->serviceLocator->get('repositories')->get('Applications/Application');
+        $repository    = $this->repositories->get('Applications/Application');
         /* @var Application $application */
         $application   = $repository->find($applicationId);
 
@@ -333,7 +352,7 @@ class ManageController extends AbstractActionController
             return $this->redirect()->toRoute('lang/applications/detail', array(), true);
         }
 
-        $events = $this->serviceLocator->get('Applications/Events');
+        $events = $this->appEvents;
 
         /* @var ApplicationEvent $event */
         $event = $events->getEvent(ApplicationEvent::EVENT_APPLICATION_STATUS_CHANGE,
@@ -344,10 +363,10 @@ class ManageController extends AbstractActionController
                                        'user' => $this->auth()->getUser(),
                                    ]
         );
-
+        
         $event->setIsPostRequest($request->isPost());
         $event->setPostData($request->getPost());
-        $events->trigger($event);
+        $events->trigger($event->getName(),$event);
 
         $params = $event->getFormData();
 
@@ -368,15 +387,15 @@ class ManageController extends AbstractActionController
         }
 
         /* @var \Applications\Form\Mail $form */
-        $form = $this->serviceLocator->get('FormElementManager')->get('Applications/Mail');
+        $form = $this->forms->get('Applications/Mail');
         $form->populateValues($params);
 
 
 
-        $reciptient = $params['to'];
+        $recipient = $params['to'];
 
         return [
-            'recipient' => $reciptient,
+            'recipient' => $recipient,
             'form' => $form
         ];
     }
@@ -389,15 +408,14 @@ class ManageController extends AbstractActionController
      */
     public function forwardAction()
     {
-        $services     = $this->serviceLocator;
         $emailAddress = $this->params()->fromQuery('email');
         /* @var \Applications\Entity\Application $application */
-        $application  = $services->get('repositories')->get('Applications/Application')
+        $application  = $this->repositories->get('Applications/Application')
                                  ->find($this->params('id'));
         
         $this->acl($application, 'forward');
         
-        $translator   = $services->get('translator');
+        $translator   = $this->translator;
          
         if (!$emailAddress) {
             throw new \InvalidArgumentException('An email address must be supplied.');
@@ -437,8 +455,7 @@ class ManageController extends AbstractActionController
     public function deleteAction()
     {
         $id          = $this->params('id');
-        $services    = $this->serviceLocator;
-        $repositories= $services->get('repositories');
+        $repositories= $this->repositories;
         $repository  = $repositories->get('Applications/Application');
         $application = $repository->find($id);
         
@@ -448,7 +465,7 @@ class ManageController extends AbstractActionController
 
         $this->acl($application, 'delete');
 
-        $events   = $services->get('Applications/Events');
+        $events   = $this->appEvents;
         $events->trigger(ApplicationEvent::EVENT_APPLICATION_PRE_DELETE, $this, [ 'application' => $application ]);
         
         $repositories->remove($application);
@@ -469,8 +486,7 @@ class ManageController extends AbstractActionController
     public function moveAction()
     {
         $id = $this->params('id');
-        $serviceManager = $this->serviceLocator;
-        $repositories = $serviceManager->get('repositories');
+        $repositories = $this->repositories;
         $application = $repositories->get('Applications/Application')->find($id);
         
         if (!$application) {

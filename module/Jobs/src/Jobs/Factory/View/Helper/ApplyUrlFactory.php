@@ -11,8 +11,7 @@
 namespace Jobs\Factory\View\Helper;
 
 use Interop\Container\ContainerInterface;
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
 use Jobs\View\Helper\ApplyUrl;
 
 /**
@@ -39,21 +38,17 @@ class ApplyUrlFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $helper    = new ApplyUrl();
-        $url       = $container->get('url');
-        $translate = $container->get('translate');
-        $params    = $container->get('params');
-        $serverUrl = $container->get('serverUrl');
+        $viewHelper = $container->get('ViewHelperManager');
+        $url       = $viewHelper->get('url');
+        $translate = $viewHelper->get('translate');
+        $params    = $viewHelper->get('params');
+        $serverUrl = $viewHelper->get('serverUrl');
+        
+	    $helper    = new ApplyUrl();
         $helper->setUrlHelper($url)
                ->setTranslateHelper($translate)
                ->setParamsHelper($params)
                ->setServerUrlHelper($serverUrl);
         return $helper;
-    }
-
-
-    public function createService(ServiceLocatorInterface $services)
-    {
-        return $this($services, ApplyUrl::class);
     }
 }

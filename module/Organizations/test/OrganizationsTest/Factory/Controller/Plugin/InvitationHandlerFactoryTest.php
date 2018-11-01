@@ -11,12 +11,15 @@
 namespace OrganizationsTest\Factory\Controller\Plugin;
 
 use Organizations\Factory\Controller\Plugin\InvitationHandlerFactory;
+use Zend\Mvc\Controller\PluginManager;
 
 /**
  * Tests for \Organizations\Factory\Controller\Plugin\InvitationHandlerFactory
  * 
  * @covers \Organizations\Factory\Controller\Plugin\InvitationHandlerFactory
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
+ * @author Anthonius Munthi <me@itstoni.com>
+ *
  * @group Organizations
  * @group Organizations.Factory
  * @group Organizations.Factory.Controller
@@ -30,13 +33,13 @@ class InvitationHandlerFactoryTest extends \PHPUnit_Framework_TestCase
      */
     public function testImplementsFactoryInterface()
     {
-        $this->assertInstanceOf('\Zend\ServiceManager\FactoryInterface', new InvitationHandlerFactory());
+        $this->assertInstanceOf('\Zend\ServiceManager\Factory\FactoryInterface', new InvitationHandlerFactory());
     }
 
     /**
      * @testdox Creates an InvitationHandler instance and injects the dependencies.
      */
-    public function testCreateService()
+    public function testInvokation()
     {
         $target = new InvitationHandlerFactory();
 
@@ -49,8 +52,22 @@ class InvitationHandlerFactoryTest extends \PHPUnit_Framework_TestCase
         $repositories->expects($this->once())->method('get')->with('Auth/User')->willReturn($userRepository);
 
         $translator = new \Zend\I18n\Translator\Translator();
-
-        $mailer = $this->getMockBuilder('\Core\Controller\Plugin\Mailer')->disableOriginalConstructor()->getMock();
+	
+	    $mailer = $this->getMockBuilder('\Core\Controller\Plugin\Mailer')
+	                   ->disableOriginalConstructor()
+	                   ->getMock()
+	    ;
+	    
+        $pluginManager = $this->getMockBuilder(PluginManager::class)
+	        ->disableOriginalConstructor()
+	        ->getMock()
+        ;
+        
+        $pluginManager->expects($this->once())
+	        ->method('get')
+	        ->with('Core/Mailer')
+	        ->willReturn($mailer)
+	    ;
 
         $emailValidator = new \Zend\Validator\EmailAddress();
 
@@ -58,23 +75,20 @@ class InvitationHandlerFactoryTest extends \PHPUnit_Framework_TestCase
         $validators->expects($this->once())->method('get')->with('EmailAddress')->willReturn($emailValidator);
 
         $services = $this->getMockBuilder('\Zend\ServiceManager\ServiceManager')->disableOriginalConstructor()->getMock();
-        $services->expects($this->exactly(4))
+        $services->expects($this->exactly(5))
                  ->method('get')
                  ->will($this->returnValueMap(array(
-                     array('ValidatorManager', true, $validators),   // get ha signature ($name, $usePeeringManagers = true)
-                     array('translator', true, $translator),
-                     array('repositories', true, $repositories),
-                     array('Auth/UserTokenGenerator', true, $tokenGenerator)
+                     array('ValidatorManager', $validators),   // get ha signature ($name, $usePeeringManagers = true)
+                     array('translator', $translator),
+                     array('repositories', $repositories),
+                     array('Auth/UserTokenGenerator', $tokenGenerator),
+	                 array('ControllerPluginManager',$pluginManager),
                  )));
-
-        $plugins = $this->getMockBuilder('\Zend\Mvc\Controller\PluginManager')->disableOriginalConstructor()->getMock();
-        $plugins->expects($this->once())->method('getServiceLocator')->willReturn($services);
-        $plugins->expects($this->once())->method('get')->with('Mailer')->willReturn($mailer);
 
         /*
          * test start here
          */
-        $plugin = $target->createService($plugins);
+        $plugin = $target->__invoke($services,'irrelevant');
 
         $this->assertInstanceOf('\Organizations\Controller\Plugin\InvitationHandler', $plugin);
         $this->assertSame($tokenGenerator, $plugin->getUserTokenGenerator());

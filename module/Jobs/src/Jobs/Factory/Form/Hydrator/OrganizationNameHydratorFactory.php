@@ -9,11 +9,11 @@
 
 namespace Jobs\Factory\Form\Hydrator;
 
+use Core\Entity\Hydrator\MappingEntityHydrator;
 use Interop\Container\ContainerInterface;
-use Jobs\Form\Hydrator\OrganizationNameHydrator;
-use Organizations\Repository\Organization;
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Jobs\Form\Hydrator\Strategy\JobManagerStrategy;
+use Jobs\Form\Hydrator\Strategy\OrganizationNameStrategy;
+use Zend\ServiceManager\Factory\FactoryInterface;
 
 /**
  * Class OrganizationNameHydratorFactory
@@ -36,24 +36,16 @@ class OrganizationNameHydratorFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        /* @var $hydrator Organization */
         $organizationRepository = $container->get('repositories')->get('Organizations/Organization');
+        $organizationNameStrategy = new OrganizationNameStrategy($organizationRepository);
 
-        $hydrator = new OrganizationNameHydrator($organizationRepository);
+        $hydrator = new MappingEntityHydrator([
+            'organization' => 'companyId',
+            'metaData'     => 'managers',
+        ]);
+        $hydrator->addStrategy('companyId', $organizationNameStrategy);
+        $hydrator->addStrategy('managers', new JobManagerStrategy());
 
         return $hydrator;
-    }
-
-
-    /**
-     * Create service
-     *
-     * @param ServiceLocatorInterface $serviceLocator
-     *
-     * @return OrganizationNameHydrator
-     */
-    public function createService(ServiceLocatorInterface $serviceLocator)
-    {
-        return $this($serviceLocator, OrganizationNameHydrator::class);
     }
 }

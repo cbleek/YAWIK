@@ -11,8 +11,12 @@
 namespace InstallTest\Factory\Controller\Plugin;
 
 use Auth\Entity\Filter\CredentialFilter;
+use Doctrine\Common\Persistence\ObjectRepository;
+use Doctrine\ODM\MongoDB\Configuration;
+use Doctrine\ODM\MongoDB\DocumentManager;
 use Install\Factory\Controller\Plugin\UserCreatorFactory;
 use Install\Filter\DbNameExtractor;
+use Zend\ServiceManager\Factory\FactoryInterface;
 
 /**
  * Tests for \Install\Factory\Controller\Plugin\UserCreatorFactory
@@ -32,7 +36,7 @@ class UserCreatorFactoryTest extends \PHPUnit_Framework_TestCase
      */
     public function testImplementsFactoryInterface()
     {
-        $this->assertInstanceOf('\Zend\ServiceManager\FactoryInterface', new UserCreatorFactory());
+        $this->assertInstanceOf(FactoryInterface::class, new UserCreatorFactory());
     }
 
     public function testCreatesAnUserCreatorPluginInstance()
@@ -41,19 +45,48 @@ class UserCreatorFactoryTest extends \PHPUnit_Framework_TestCase
         $filters->expects($this->exactly(2))
                 ->method('get')
                 ->withConsecutive(
-                    array('Install/DbNameExtractor'),
-                    array('Auth/CredentialFilter')
+                    array(DbNameExtractor::class),
+                    array(CredentialFilter::class)
                 )
                 ->will($this->onConsecutiveCalls(new DbNameExtractor(), new CredentialFilter()));
 
+
+        $configuration = $this->createMock(Configuration::class);
+        $dm = $this->getMockBuilder(DocumentManager::class)
+            ->disableOriginalConstructor()
+            ->getMock()
+        ;
+        $dm->expects($this->once())
+            ->method('getConfiguration')
+            ->willReturn($configuration)
+        ;
         $services = $this->getMockBuilder('\Zend\ServiceManager\ServiceManager')->disableOriginalConstructor()->getMock();
-        $services->expects($this->once())->method('get')->with('FilterManager')->willReturn($filters);
+        $services
+            ->expects($this->exactly(2))
+            ->method('get')
+            ->withConsecutive(
+                ['FilterManager'],['doctrine.documentmanager.odm_default']
+            )
+            ->will($this->onConsecutiveCalls(
+                $filters,$dm
+            ))
+        ;
 
-        $plugins = $this->getMockBuilder('\Zend\Mvc\Controller\PluginManager')->disableOriginalConstructor()->getMock();
-        $plugins->expects($this->once())->method('getServiceLocator')->willReturn($services);
+        
+        //$plugins = $this->getMockBuilder('\Zend\Mvc\Controller\PluginManager')->disableOriginalConstructor()->getMock();
+        //$plugins->expects($this->once())->method('getServiceLocator')->willReturn($services);
 
-        $target = new UserCreatorFactory();
-        $plugin = $target->createService($plugins);
+        $target = $this->getMockBuilder(UserCreatorFactory::class)
+            ->setMethods(['createDocumentManager'])
+            ->getMock()
+        ;
+        $target->expects($this->once())
+            ->method('createDocumentManager')
+            ->willReturn($dm)
+        ;
+
+        /* @var \Install\Factory\Controller\Plugin\UserCreatorFactory $target */
+        $plugin = $target($services,'some-name',['connection' => 'some-connection']);
 
         $this->assertInstanceOf('\Install\Controller\Plugin\UserCreator', $plugin);
     }

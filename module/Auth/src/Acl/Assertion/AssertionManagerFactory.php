@@ -9,8 +9,8 @@
 
 namespace Acl\Assertion;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Interop\Container\ContainerInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
 use Zend\ServiceManager\Config;
 
 /**
@@ -20,25 +20,15 @@ use Zend\ServiceManager\Config;
  */
 class AssertionManagerFactory implements FactoryInterface
 {
-    /**
-     * Creates an instance of \Auth\View\Helper\Auth
-     *
-     * - Injects the AuthenticationService
-     *
-     * @param ServiceLocatorInterface $serviceLocator
-     * @return AssertionManager
-     * @see \Zend\ServiceManager\FactoryInterface::createService()
-     */
-    public function createService(ServiceLocatorInterface $serviceLocator)
-    {
-        $configArray = $serviceLocator->get('Config');
-        $configArray = isset($configArray['acl']['assertions'])
-                     ? $configArray['acl']['assertions']
-                     : array();
-        $config      = new Config($configArray);
-        $manager     = new AssertionManager($serviceLocator, $config);
-        
-        $manager->setShareByDefault(false);
-        return $manager;
-    }
+	public function __invoke( ContainerInterface $container, $requestedName, array $options = null ) {
+		$configContainer = $container->get('Config');
+		$configArray = isset($configContainer['acl']['assertions'])
+			? $configContainer['acl']['assertions']
+			: array();
+
+		$manager     = new AssertionManager($container, $configArray);
+		
+		$manager->configure(['shared_by_default'=>false]);
+		return $manager;
+	}
 }

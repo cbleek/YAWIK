@@ -10,7 +10,9 @@
 namespace Applications\Form;
 
 use Settings\Entity\Hydrator\SettingsEntityHydrator;
+use Zend\Form\Element\Checkbox;
 use Zend\Form\Fieldset;
+use Zend\Stdlib\InitializableInterface;
 
 //use Zend\InputFilter\InputFilterProviderInterface;
 
@@ -41,10 +43,11 @@ class SettingsFieldset extends Fieldset
     {
         $this->setName('emails')
              ->setLabel(/* @translate */ 'E-Mail Notifications');
-
+	    
         $this->add(
-            array('type' => 'Zend\Form\Element\Checkbox',
+            array('type' => Checkbox::class,
                 'name' => 'mailAccess',
+                'label' => 'foo',
                 'options' => array('label' => /* @translate */ 'receive E-Mail alert',
                                    'long_label' => /* @translate */ 'if checked, you\'ll be informed by mail about new applications.'),
                 )
@@ -53,7 +56,7 @@ class SettingsFieldset extends Fieldset
             array('type' => 'Zend\Form\Element\Textarea',
                 'name' => 'mailAccessText',
                 'options' => array('label' => /* @translate */ 'Mailtext',
-                                            'description' => /* @translate */ 'default text of the notification mail about new applications. The following variables can be used:<ul><li>##name## = your name</li><li>##title## = title of the job</li></ul>'))
+                                            'description' => /* @translate */ 'default text of the notification mail about new applications. The following variables can be used:<ul><li>##name## = your name</li><li>##title## = title of the job</li><li>##link## = Url of the application detail page</li></ul>'))
         );
         
         $this->add(
@@ -67,7 +70,7 @@ class SettingsFieldset extends Fieldset
             array('type' => 'Zend\Form\Element\Textarea',
                         'name' => 'mailConfirmationText',
                          'options' => array('label' => /* @translate */ 'Confirmation mail text',
-                                            'description' => /* @translate */ 'default text of the acknowledgment of receipt mail to the applicant. The following variables can be used:<br><ul><li>##anrede_formell## = salutation. Includes gender, firstname and lastname.<li>##anrede_informell## = salutation. Includes fistname and lastname.</li><li>##job_title## = title of the jobs</li><li>##name## = name of the applicant.</li><li>##date## = date of recipt of the application.</li></ul>' ))
+                                            'description' => /* @translate */ 'default text of the acknowledgment of receipt mail to the applicant. The following variables can be used:<br><ul><li>##anrede_formell## = salutation. Includes gender, firstname and lastname.<li>##anrede_informell## = salutation. Includes fistname and lastname.</li><li>##job_title## = title of the jobs</li><li>##name## = name of the applicant.</li><li>##date## = date of recipt of the application.</li><li>##link## = Link to the application details</li></ul>' ))
         );
         
         $this->add(
@@ -114,11 +117,11 @@ class SettingsFieldset extends Fieldset
 
         $this->add(
             array(
-            'type' => 'Settings/DisableElementsCapableFormSettingsFieldset',
-            'name' => 'applyFormSettings',
-            'options' => array(
-
-            )
+	            'type' => 'Settings/DisableElementsCapableFormSettingsFieldset',
+	            'name' => 'applyFormSettings',
+	            'options' => array(
+	
+	            )
             )
         );
     }

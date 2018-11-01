@@ -1,4 +1,10 @@
 <?php
+namespace Jobs;
+use Jobs\Controller\AdminCategoriesController;
+use Jobs\Controller\AdminController;
+use Jobs\Controller\ConsoleController;
+use Jobs\Form\InputFilter\JobLocationEdit;
+use Jobs\Listener\Publisher;
 
 return [
     'doctrine' => [
@@ -144,6 +150,9 @@ return [
                         'query' => [
                             'clear' => '1'
                         ],
+                        'active_on' => [
+                            'lang/jobs/approval',
+                        ]
                     ],
                     'jobs-categories' => [
                         'label' => /*@translate*/ 'Jobs categories',
@@ -216,11 +225,13 @@ return [
             'Jobs/Listener/AdminWidgetProvider'           => 'Jobs\Factory\Listener\AdminWidgetProviderFactory',
             'Jobs/ViewModelTemplateFilter'                => 'Jobs\Factory\Filter\ViewModelTemplateFilterFactory',
             'Jobs\Model\ApiJobDehydrator'                 => 'Jobs\Factory\Model\ApiJobDehydratorFactory',
-            'Jobs/Listener/Publisher'                     => 'Jobs\Listener\Publisher::factory',
+            'Jobs/Listener/Publisher'                     => [Publisher::class,'factory'],
             'Jobs/PreviewLinkHydrator'                    => 'Jobs\Form\Hydrator\PreviewLinkHydrator::factory',
             'Jobs\Auth\Dependency\ListListener'           => 'Jobs\Factory\Auth\Dependency\ListListenerFactory',
             'Jobs/DefaultCategoriesBuilder'              => 'Jobs\Factory\Repository\DefaultCategoriesBuilderFactory',
             \Jobs\Listener\DeleteJob::class               => \Jobs\Factory\Listener\DeleteJobFactory::class,
+            \Jobs\Listener\GetOrganizationManagers::class => \Jobs\Factory\Listener\GetOrganizationManagersFactory::class,
+            \Jobs\Listener\LoadActiveOrganizations::class => \Jobs\Factory\Listener\LoadActiveOrganizationsFactory::class,
 
         ],
         'shared' => [
@@ -229,12 +240,14 @@ return [
         ]
     ],
 
+
     'event_manager' => [
         'Core/AdminController/Events' => [ 'listeners' => [
             'Jobs/Listener/AdminWidgetProvider' => \Core\Controller\AdminControllerEvent::EVENT_DASHBOARD,
         ]],
 
         'Jobs/Events' => [
+            'service' => 'Core/EventManager',
             'event' => '\Jobs\Listener\Events\JobEvent',
         ],
 
@@ -251,20 +264,33 @@ return [
         ],
         'Core/Ajax/Events' => ['listeners' => [
             \Jobs\Listener\DeleteJob::class => ['jobs.delete', true],
+            \Jobs\Listener\GetOrganizationManagers::class => ['jobs.manager-select', true],
+            \Jobs\Listener\LoadActiveOrganizations::class => [ 'jobs.admin.activeorganizations', true],
+
+        ]],
+
+        'Core/EntityEraser/Load/Events' => ['listeners' => [
+            Listener\LoadExpiredJobsToPurge::class => [
+                'events' => [
+                    Listener\LoadExpiredJobsToPurge::EVENT_NAME,
+                    \Core\Service\EntityEraser\LoadEvent::FETCH_LIST => 'onFetchList',
+                ],
+                'lazy' => true
+            ],
         ]],
     ],
 
 
     'controllers' => [
         'invokables' => [
-            'Jobs/Import' => 'Jobs\Controller\ImportController',
-            'Jobs/Console' => 'Jobs\Controller\ConsoleController',
             'Jobs/ApiJobList' => 'Jobs\Controller\ApiJobListController',
-            'Jobs/Admin'      => 'Jobs\Controller\AdminController',
             'Jobs/ApiJobListByChannel' => 'Jobs\Controller\ApiJobListByChannelController',
-            'Jobs/AdminCategories' => 'Jobs\Controller\AdminCategoriesController',
         ],
         'factories' => [
+            'Jobs/Import' => [ Controller\ImportController::class, 'factory'],
+        	'Jobs/Console' => [ConsoleController::class,'factory'],
+	        'Jobs/AdminCategories' => [AdminCategoriesController::class,'factory'],
+	        'Jobs/Admin'      => [AdminController::class,'factory'],
             'Jobs/Template' => 'Jobs\Factory\Controller\TemplateControllerFactory',
             'Jobs/Index' => 'Jobs\Factory\Controller\IndexControllerFactory',
             'Jobs/Approval' => 'Jobs\Factory\Controller\ApprovalControllerFactory',
@@ -287,6 +313,7 @@ return [
         'factories' => [
             'Jobs/Job'   => 'Jobs\Paginator\JobsPaginatorFactory',
             'Jobs/Admin' => 'Jobs\Paginator\JobsAdminPaginatorFactory',
+            'Jobs\Paginator\ActiveOrganizations' => \Jobs\Factory\Paginator\ActiveOrganizationsPaginatorFactory::class,
         ],
         'aliases' => [
             'Jobs/Board' => 'Jobs/Job'
@@ -303,6 +330,7 @@ return [
             'jobs/form/multiposting-checkboxes' => __DIR__ . '/../view/form/multiposting-checkboxes.phtml',
             'jobs/form/ats-mode.view' => __DIR__ . '/../view/form/ats-mode.view.phtml',
             'jobs/form/ats-mode.form' => __DIR__ . '/../view/form/ats-mode.form.phtml',
+            'jobs/form/company-name-fieldset' => __DIR__ . '/../view/form/company-name-fieldset.phtml',
             'jobs/form/preview' => __DIR__ . '/../view/form/preview.phtml',
             'jobs/form/customer-note' => __DIR__ . '/../view/form/customer-note.phtml',
             'jobs/partials/channel-list' => __DIR__ . '/../view/partials/channel-list.phtml',
@@ -343,6 +371,12 @@ return [
             'applyUrl' => 'Jobs\Factory\View\Helper\ApplyUrlFactory',
             'jobUrl' => 'Jobs\Factory\View\Helper\JobUrlFactory',
             'Jobs/AdminEditLink' => 'Jobs\Factory\View\Helper\AdminEditLinkFactory',
+            View\Helper\JsonLd::class => \Zend\ServiceManager\Factory\InvokableFactory::class,
+            View\Helper\JobOrganizationName::class => \Zend\ServiceManager\Factory\InvokableFactory::class,
+        ],
+        'aliases' => [
+            'jsonLd' => View\Helper\JsonLd::class,
+            'jobOrganizationName' => View\Helper\JobOrganizationName::class,
         ],
 
     ],
@@ -390,6 +424,7 @@ return [
             'Jobs/ClassificationsFieldset'      => 'Jobs\Form\ClassificationsFieldset',
             'Jobs/CustomerNote'                 => 'Jobs\Form\CustomerNote',
             'Jobs/CustomerNoteFieldset'         => 'Jobs\Form\CustomerNoteFieldset',
+            'Jobs/ManagerSelect'                => 'Jobs\Form\Element\ManagerSelect',
 
         ],
         'factories' => [
@@ -402,18 +437,22 @@ return [
             'Jobs/ActiveOrganizationSelect'     => 'Jobs\Factory\Form\ActiveOrganizationSelectFactory',
             'Jobs/MultipostingSelect'           => 'Jobs\Factory\Form\MultipostingMultiCheckboxFactory',
             'Jobs/Import'                       => 'Jobs\Factory\Form\ImportFactory',
-        ]
+        ],
     ],
 
     'input_filters' => [
         'invokables' => [
             'Jobs/Location/New'                 => 'Jobs\Form\InputFilter\JobLocationNew',
-            'Jobs/Location/Edit'                => 'Jobs\Form\InputFilter\JobLocationEdit',
+            //'Jobs/Location/Edit'                => 'Jobs\Form\InputFilter\JobLocationEdit',
+	        JobLocationEdit::class => JobLocationEdit::class,
             'Jobs/Company'                      => 'Jobs\Form\InputFilter\CompanyName',
         ],
         'factories' => [
             'Jobs/AtsMode'                      => 'Jobs\Factory\Form\InputFilter\AtsModeFactory',
-        ]
+        ],
+	    'aliases' => [
+	    	'Jobs/Location/Edit' => JobLocationEdit::class
+	    ]
     ],
 
     'filters' => [

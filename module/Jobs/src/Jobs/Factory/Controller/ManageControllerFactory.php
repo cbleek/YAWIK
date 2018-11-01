@@ -12,8 +12,7 @@ namespace Jobs\Factory\Controller;
 use Interop\Container\ContainerInterface;
 use Jobs\Controller\ManageController;
 use Core\Repository\RepositoryService;
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
 
 class ManageControllerFactory implements FactoryInterface
 {
@@ -36,18 +35,27 @@ class ManageControllerFactory implements FactoryInterface
         /* @var RepositoryService     $repositoryService */
         $repositoryService =    $container->get('repositories');
         $translator =    $container->get('translator');
-        return new ManageController($auth, $repositoryService, $translator);
-    }
-
-    /**
-     * Injects all needed services into the ManageController
-     *
-     * @param ServiceLocatorInterface $serviceLocator
-     *
-     * @return ManageController
-     */
-    public function createService(ServiceLocatorInterface $serviceLocator)
-    {
-        return $this($serviceLocator->getServiceLocator(), ManageController::class);
+        $filterManager = $container->get('FilterManager');
+        $jobFormEvents = $container->get('Jobs/JobContainer/Events');
+        $formManager = $container->get('FormElementManager');
+        $options['core'] = $container->get('Core/Options');
+        $options['channels'] = $container->get('Jobs/Options/Provider');
+        $viewHelper = $container->get('ViewHelperManager');
+        $validatorManager = $container->get('ValidatorManager');
+        $jobEvents = $container->get('Jobs/Events');
+        $jobEvent = $container->get('Jobs/Event');
+        return new ManageController(
+        	$auth,
+	        $repositoryService,
+	        $translator,
+	        $filterManager,
+	        $jobFormEvents,
+	        $formManager,
+	        $options,
+	        $viewHelper,
+	        $validatorManager,
+	        $jobEvents,
+	        $jobEvent
+        );
     }
 }

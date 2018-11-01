@@ -16,12 +16,15 @@ use Organizations\Entity\Organization;
 use Organizations\Entity\OrganizationName;
 use Organizations\Entity\OrganizationReference;
 use Organizations\Mail\EmployeeInvitationFactory;
+use Zend\Router\RouteStackInterface;
 
 /**
  * Tests for \Organizations\Mail\EmployeeInvitationFactory
  *
  * @covers \Organizations\Mail\EmployeeInvitationFactory
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
+ * @author Anthonius Munthi <me@itstoni.com>
+ *
  * @group Organizations
  * @group Organizations.Mail
  */
@@ -35,8 +38,7 @@ class EmployeeInvitationFactoryTest extends \PHPUnit_Framework_TestCase
     {
         $target = new EmployeeInvitationFactory();
 
-        $this->assertInstanceOf('\Zend\ServiceManager\FactoryInterface', $target);
-        $this->assertInstanceOf('\Zend\ServiceManager\MutableCreationOptionsInterface', $target);
+        $this->assertInstanceOf('\Zend\ServiceManager\Factory\FactoryInterface', $target);
     }
 
     /**
@@ -87,7 +89,7 @@ class EmployeeInvitationFactoryTest extends \PHPUnit_Framework_TestCase
     /**
      * @testdox Creates a proper configured HTMLTemplate Mail.
      */
-    public function testCreateService()
+    public function testInvokation()
     {
         
         $user = new User();
@@ -131,7 +133,7 @@ class EmployeeInvitationFactoryTest extends \PHPUnit_Framework_TestCase
         $authService = $this->getMockBuilder('\Auth\AuthenticationService')->disableOriginalConstructor()->getMock();
         $authService->expects($this->once())->method('getUser')->willReturn($owner);
 
-        $router = $this->getMockForAbstractClass('\Zend\Mvc\Router\RouteStackInterface');
+        $router = $this->getMockForAbstractClass(RouteStackInterface::class);
         $router->expects($this->once())
                ->method('assemble')
                ->with(array('action' => 'accept'),
@@ -149,23 +151,25 @@ class EmployeeInvitationFactoryTest extends \PHPUnit_Framework_TestCase
                  ->withConsecutive(
                         array('AuthenticationService'),
                         array('Router'),
-                        ['MailService']
+                        ['Core/MailService']
                  )->will($this->onConsecutiveCalls($authService, $router, $mailService));
-
-
-        $mailService->expects($this->once())->method('getServiceLocator')->willReturn($services);
 
         $mailMock = new HTMLTemplateMessage(new \Zend\ServiceManager\ServiceManager());
         $translator = $this->getMockBuilder('\Zend\I18n\Translator\Translator')->disableOriginalConstructor()->getMock();
-        $translator->expects($this->any())->method('translate')->will($this->returnArgument(0));
+        $translator
+	        ->expects($this->any())
+	        ->method('translate')
+	        ->will($this->returnArgument(0));
         $mailMock->setTranslator($translator);
-        $mailService->expects($this->once())->method('get')->with('htmltemplate')
-                    ->willReturn($mailMock);
+        $mailService
+	        ->expects($this->once())
+	        ->method('get')
+	        ->with('htmltemplate')
+	        ->willReturn($mailMock);
 
 
         $target = new EmployeeInvitationFactory();
-        $target->setCreationOptions($options);
-        $mail = $target->createService($mailService);
+        $mail = $target->__invoke($services,'irrelevant',$options);
 
 
         $vars = $mail->getVariables()->getArrayCopy();

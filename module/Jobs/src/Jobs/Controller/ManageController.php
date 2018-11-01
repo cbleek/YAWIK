@@ -13,9 +13,16 @@ namespace Jobs\Controller;
 
 use Jobs\Entity\JobInterface;
 use Jobs\Entity\JobSnapshot;
+use Jobs\Entity\JobSnapshotStatus;
 use Jobs\Entity\Status;
 use Core\Repository\RepositoryService;
+use Zend\EventManager\EventInterface;
+use Zend\EventManager\EventManagerInterface;
+use Zend\Filter\FilterPluginManager;
+use Zend\I18n\Translator\TranslatorInterface;
 use Zend\Mvc\Controller\AbstractActionController;
+use Zend\Validator\ValidatorPluginManager;
+use Zend\View\HelperPluginManager;
 use Zend\View\Model\ViewModel;
 use Zend\View\Model\JsonModel;
 use Core\Form\SummaryForm;
@@ -41,6 +48,7 @@ use Core\Entity\Exception\NotFoundException;
  * @author Carsten Bleek <bleek@cross-solution.de>
  * @author Rafal Ksiazek
  * @author Miroslav Fedeleš <miroslav.fedeles@gmail.com>
+ * @author Anthonius Munthi <me@itstoni.com>
  */
 class ManageController extends AbstractActionController
 {
@@ -58,17 +66,71 @@ class ManageController extends AbstractActionController
      * @var Translator
      */
     protected $translator;
-
-    /**
-     * @param AuthenticationService $auth
-     * @param RepositoryService     $repositoryService
-     * @param                       $translator
-     */
-    public function __construct(AuthenticationService $auth, RepositoryService $repositoryService, Translator $translator)
+	
+	/**
+	 * @var FilterPluginManager
+	 */
+    protected $filterManager;
+    
+    protected $jobFormEvents;
+	
+	/**
+	 * @var
+	 */
+    protected $formManager;
+    
+    protected $options;
+    
+    protected $viewHelper;
+    
+    protected $validatorManager;
+    
+    protected $jobEvents;
+    
+    protected $jobEvent;
+	
+	/**
+	 * ManageController constructor.
+	 *
+	 * @TODO: [ZF3] make this controller more thin, looks like so much things to do
+	 *
+	 * @param AuthenticationService $auth
+	 * @param RepositoryService $repositoryService
+	 * @param TranslatorInterface $translator
+	 * @param FilterPluginManager $filterManager
+	 * @param EventManagerInterface $jobFormEvents
+	 * @param $formManager
+	 * @param $options
+	 * @param HelperPluginManager $viewHelper
+	 * @param ValidatorPluginManager $validatorManager
+	 * @param EventManagerInterface $jobEvents
+	 * @param EventInterface $jobEvent
+	 */
+    public function __construct(
+    	AuthenticationService $auth,
+	    RepositoryService $repositoryService,
+	    TranslatorInterface $translator,
+		FilterPluginManager $filterManager,
+		EventManagerInterface $jobFormEvents,
+		$formManager,
+		$options,
+		HelperPluginManager $viewHelper,
+		ValidatorPluginManager $validatorManager,
+		EventManagerInterface $jobEvents,
+		EventInterface $jobEvent
+    )
     {
         $this->auth = $auth;
         $this->repositoryService = $repositoryService;
         $this->translator = $translator;
+        $this->filterManager = $filterManager;
+        $this->jobFormEvents = $jobFormEvents;
+        $this->formManager = $formManager;
+        $this->options = $options;
+        $this->viewHelper = $viewHelper;
+        $this->validatorManager = $validatorManager;
+        $this->jobEvents = $jobEvents;
+        $this->jobEvent = $jobEvent;
     }
 
     /**
@@ -79,12 +141,6 @@ class ManageController extends AbstractActionController
         parent::attachDefaultListeners();
         $events = $this->getEventManager();
         $events->attach(MvcEvent::EVENT_DISPATCH, array($this, 'preDispatch'), 10);
-        $serviceLocator = $this->serviceLocator;
-        $defaultServices = $serviceLocator->get('DefaultListeners');
-        $events = $this->getEventManager();
-        $events->attach($defaultServices);
-
-        return $this;
     }
 
     /**
@@ -102,9 +158,8 @@ class ManageController extends AbstractActionController
         }
         $routeMatch = $e->getRouteMatch();
         $action = $routeMatch->getParam('action');
-
+	    $services = $e->getApplication()->getServiceManager();
         if (in_array($action, array('edit', 'approval', 'completion'))) {
-            $services = $this->serviceLocator;
             $jobEvents = $services->get('Jobs/Events');
             $mailSender = $services->get('Jobs/Listener/MailSender');
 
@@ -120,7 +175,7 @@ class ManageController extends AbstractActionController
     public function editAction()
     {
         if ('calculate' == $this->params()->fromQuery('do')) {
-            $calc = $this->serviceLocator->get('filtermanager')->get('Jobs/ChannelPrices');
+            $calc = $this->filterManager->get('Jobs/ChannelPrices');
             $sum = $calc->filter($this->params()->fromPost('channels'));
 
             return new JsonModel(['sum' => $sum]);
@@ -139,9 +194,9 @@ class ManageController extends AbstractActionController
 
     public function channelListAction()
     {
-        $serviceLocator = $this->serviceLocator;
-        $options = $serviceLocator->get('Core/Options');
-        $channels = $serviceLocator->get('Jobs/Options/Provider');
+        
+        $options = $this->options['core'];
+        $channels = $this->options['channels'];
 
 
 
@@ -171,9 +226,7 @@ class ManageController extends AbstractActionController
      */
     protected function save()
     {
-        $serviceLocator     = $this->serviceLocator;
-        $formEvents         = $serviceLocator->get('Jobs/JobContainer/Events');
-
+		$formEvents = $this->jobFormEvents;
         $user               = $this->auth->getUser();
         if (empty($user->getInfo()->getEmail())) {
             return $this->getErrorViewModel('no-parent', array('cause' => 'noEmail'));
@@ -204,7 +257,7 @@ class ManageController extends AbstractActionController
         if ('1' == $params->fromQuery('admin')) {
             /* @var \Auth\Controller\Plugin\UserSwitcher $switcher */
             $switcher = $this->plugin('Auth/User/Switcher');
-            $switcher($jobEntity->getUser(), ['return' => urldecode($params->fromQuery('return'))]);
+            $switcher($jobEntity->getUser(), ['ref' => urldecode($params->fromQuery('return'))]);
         }
 
 
@@ -295,11 +348,11 @@ class ManageController extends AbstractActionController
         if ($isAjax) {
             if ($instanceForm instanceof SummaryForm) {
                 $instanceForm->setRenderMode(SummaryForm::RENDER_SUMMARY);
-                $viewHelper = 'summaryform';
+                $viewHelper = 'summaryForm';
             } else {
                 $viewHelper = 'form';
             }
-            $viewHelperManager  = $serviceLocator->get('ViewHelperManager');
+            $viewHelperManager  = $this->viewHelper;
             $content = $viewHelperManager->get($viewHelper)->__invoke($instanceForm);
             $viewModel = new JsonModel(
                 array(
@@ -307,7 +360,8 @@ class ManageController extends AbstractActionController
                 'valid' => $valid,
                 'jobvalid' => $jobValid,
                 'errors' => $formErrorMessages,
-                'errorMessage' => $errorMessage)
+                'errorMessage' => $errorMessage,
+                'displayMode' => $this->params()->fromQuery('displayMode', 'summary'))
             );
         } else {
             if ($jobEntity->isDraft()) {
@@ -353,6 +407,10 @@ class ManageController extends AbstractActionController
 
     protected function changeStatus(JobInterface $job, $status)
     {
+        if ($job instanceOf JobSnapshot) {
+            $job = $job->getOriginalEntity();
+        }
+
         $oldStatus = $job->getStatus();
 
         if ($status == $oldStatus->getName()) {
@@ -362,7 +420,7 @@ class ManageController extends AbstractActionController
         try {
             $job->changeStatus($status, sprintf('Status changed from %s to %s by %s', $oldStatus->getName(), $status, $user->getInfo()->getDisplayName()));
 
-            $events = $this->serviceLocator->get('Jobs/Events');
+            $events = $this->jobEvents;
             $events->trigger(JobEvent::EVENT_STATUS_CHANGED, $this, ['job' => $job, 'status' => $oldStatus]);
             $this->notification()->success(/*@translate*/ 'Status successfully changed.');
         } catch (\DomainException $e) {
@@ -375,8 +433,7 @@ class ManageController extends AbstractActionController
      */
     public function checkApplyIdAction()
     {
-        $services = $this->serviceLocator;
-        $validator = $services->get('validatormanager')->get('Jobs/Form/UniqueApplyId');
+        $validator = $this->validatorManager->get('Jobs/Form/UniqueApplyId');
         if (!$validator->isValid($this->params()->fromQuery('applyId'))) {
             return array(
                 'ok' => false,
@@ -392,9 +449,8 @@ class ManageController extends AbstractActionController
      */
     protected function getFormular($job)
     {
-        $services = $this->serviceLocator;
-        /* @var $forms \Zend\Form\FormElementManager */
-        $forms    = $services->get('FormElementManager');
+        /* @var $forms \Zend\Form\FormElementManager\FormElementManagerV3Polyfill */
+        $forms    = $this->formManager;
         /* @var $container \Jobs\Form\Job */
 
         $container = $forms->get(
@@ -435,7 +491,6 @@ class ManageController extends AbstractActionController
      */
     public function completionAction()
     {
-        $serviceLocator = $this->serviceLocator;
 
         $job = $this->initializeJob()->get($this->params(), false, true);
 
@@ -461,10 +516,15 @@ class ManageController extends AbstractActionController
             */
             $this->repositoryService->store($job);
 
-            $jobEvents = $serviceLocator->get('Jobs/Events');
+            $jobEvents = $this->jobEvents;
             $jobEvents->trigger(JobEvent::EVENT_JOB_CREATED, $this, array('job' => $job));
         } else if ($job->isActive()) {
-            $job->getSnapshotMeta()->getEntity()->changeStatus(Status::WAITING_FOR_APPROVAL, 'job was edited.');
+            $eventParams = [
+                'job' => $job,
+                'statusWas' => $job->getStatus()->getName(),
+            ];
+            $job->getOriginalEntity()->changeStatus(Status::WAITING_FOR_APPROVAL, 'job was edited.');
+            $this->jobEvents->trigger(JobEvent::EVENT_STATUS_CHANGED, $this, $eventParams);
         }
 
         /* @var \Auth\Controller\Plugin\UserSwitcher $switcher */
@@ -488,16 +548,16 @@ class ManageController extends AbstractActionController
      */
     public function approvalAction()
     {
-        $serviceLocator = $this->serviceLocator;
         $user           = $this->auth->getUser();
 
         $params         = $this->params('state');
 
         $jobEntity = $this->initializeJob()->get($this->params(), false, true);
-        $jobEvent       = $serviceLocator->get('Jobs/Event');
+        $jobEvent       = $this->jobEvent;
         $jobEvent->setJobEntity($jobEntity);
         $jobEvent->addPortal('XingVendorApi');
-        $jobEvents      = $serviceLocator->get('Jobs/Events');
+        $jobEvent->setTarget($this);
+        $jobEvents      = $this->jobEvents;
         // array with differences between the last snapshot and the actual entity
         // is remains Null if there is no snapshot
         // it will be an empty array if the snapshot and the actual entity do not differ
@@ -505,28 +565,51 @@ class ManageController extends AbstractActionController
 
 
         if ($params == 'declined') {
-            $jobEntity->changeStatus(Status::REJECTED, sprintf(/*@translate*/ "Job opening was rejected by %s", $user->getInfo()->getDisplayName()));
-            $jobEntity->setIsDraft(true);
+            if ($jobEntity instanceOf JobSnapshot)  {
+                $jobEntity->getOriginalEntity()->changeStatus(
+                    Status::ACTIVE,
+                    sprintf(
+                        /*@translate*/ 'Changes were rejected by %s',
+                        $user->getInfo()->getDisplayName()
+                    )
+                );
+                $jobEntity->getSnapshotMeta()->setStatus(JobSnapshotStatus::REJECTED)->setIsDraft(false);
+            } else {
+                $jobEntity->changeStatus(
+                    Status::REJECTED,
+                    sprintf(
+                        /*@translate*/ "Job opening was rejected by %s",
+                        $user->getInfo()->getDisplayName()
+                    )
+                );
+                $jobEntity->setIsDraft(true);
+            }
+
             $this->repositoryService->store($jobEntity);
-            $jobEvents->trigger(JobEvent::EVENT_JOB_REJECTED, $jobEvent);
+            $jobEvent->setName(JobEvent::EVENT_JOB_REJECTED);
+
+            $jobEvents->trigger($jobEvent);
             $this->notification()->success(/*@translate */'Job has been rejected');
         }
 
         if ($params == 'approved') {
             if ($jobEntity instanceOf JobSnapshot) {
+                $jobEntity->getSnapshotMeta()->setStatus(JobSnapshotStatus::ACCEPTED);
                 $jobEntity = $this->repositoryService->get('Jobs/JobSnapshot')->merge($jobEntity);
+                $jobEntity->setDateModified();
             } else {
                 $jobEntity->setDatePublishStart();
             }
             $jobEntity->changeStatus(Status::ACTIVE, sprintf(/*@translate*/ "Job opening was activated by %s", $user->getInfo()->getDisplayName()));
             $this->repositoryService->store($jobEntity);
-            $jobEvents->trigger(JobEvent::EVENT_JOB_ACCEPTED, $jobEvent);
+            $jobEvent->setName(JobEvent::EVENT_JOB_ACCEPTED);
+            $jobEvents->trigger($jobEvent);
             //$this->entitySnapshot($jobEntity);
             $this->notification()->success(/* @translate */ 'Job has been approved');
             return $this->redirect()->toRoute('lang/admin/jobs', array('lang' => $this->params('lang')));
         }
 
-        $query = $jobEntity instanceOf JobSnapshot ? ['snapshot' => $jobEntity->getSnapshotId()] : ['id' => $jobEntity->getId()];
+        $query = /*$jobEntity instanceOf JobSnapshot ? ['snapshot' => $jobEntity->getSnapshotId()] : */['id' => $jobEntity->getId()];
         $viewLink = $this->url()->fromRoute(
             'lang/jobs/view',
             array(),
@@ -570,6 +653,7 @@ class ManageController extends AbstractActionController
         } catch (\Exception $e) {
             $this->notification()->danger(/*@translate*/ 'Job could not be deactivated');
         }
+        exit;
         return $this->save(array('page' => 2));
     }
 

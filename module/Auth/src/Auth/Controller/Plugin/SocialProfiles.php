@@ -12,19 +12,28 @@ namespace Auth\Controller\Plugin;
 
 use Zend\Mvc\Controller\Plugin\AbstractPlugin;
 use Auth\Controller\Plugin\SocialProfiles\AbstractAdapter;
+use Zend\Stdlib\RequestInterface;
 
 class SocialProfiles extends AbstractPlugin
 {
+	protected $hybridAuth;
+	
     protected $adapterMap = array(
         'facebook' => '\\Auth\\Controller\\Plugin\\SocialProfiles\\Facebook',
         'xing'     => '\\Auth\\Controller\\Plugin\\SocialProfiles\\Xing',
         'linkedin' => '\\Auth\\Controller\\Plugin\\SocialProfiles\\LinkedIn',
             
     );
+	
+	/**
+	 * @var RequestInterface
+	 */
+    protected $request;
     
-    public function __construct($hybridAuth, array $adapters = array())
+    public function __construct($hybridAuth,RequestInterface $request,array $adapters = array())
     {
         $this->hybridAuth = $hybridAuth;
+        $this->request = $request;
         foreach ($adapters as $network => $adapter) {
             $this->addAdapter($network, $adapter);
         }
@@ -35,12 +44,17 @@ class SocialProfiles extends AbstractPlugin
         return $this->fetch($network);
     }
     
+    /**
+     * @param string $network
+     * @return \Auth\Entity\SocialProfiles\ProfileInterface|bool
+     */
     public function fetch($network)
     {
-        $returnUri    = $this->getController()->getRequest()->getRequestUri();
+        $returnUri    = $this->request->getRequestUri();
         $hauthAdapter = $this->hybridAuth->authenticate($network, array('hauth_return_to' => $returnUri));
         $api          = $hauthAdapter->api();
         $adapter      = $this->getAdapter($network);
+        $adapter->init($api, $hauthAdapter);
         $profile      = $adapter->fetch($api);
         
         return $profile;

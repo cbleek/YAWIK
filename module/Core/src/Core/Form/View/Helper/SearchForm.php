@@ -13,6 +13,7 @@ namespace Core\Form\View\Helper;
 use Core\Form\Element\ViewHelperProviderInterface;
 use Core\Form\TextSearchFormFieldset;
 use Core\Form\ViewPartialProviderInterface;
+use Zend\Form\Element\Hidden;
 use Zend\Form\ElementPrepareAwareInterface;
 use Zend\Form\FieldsetInterface;
 use Zend\Form\FormInterface;
@@ -77,7 +78,12 @@ class SearchForm extends Form
 
         $content = '';
         foreach ($buttons as $button) {
-            $content.= $helper($button);
+            $button->removeAttribute('name');
+            $attrs = $helper->createAttributesString($button->getAttributes());
+
+            $content.= '<button ' . $attrs . '>'
+                       . $this->getTranslator()->translate($button->getLabel(), $this->getTranslatorTextDomain())
+                       . '</button>';
         }
 
         return $content;
@@ -96,6 +102,11 @@ class SearchForm extends Form
         $formElement = $this->getView()->plugin('formElement');
         $content = ''; $buttonsRendered = false; $i=0;
         foreach ($form as $element) {
+
+            if ($element instanceOf Hidden) {
+                $content .= $formElement($element);
+                continue;
+            }
 
             if (isset($colMap[$element->getName()])) {
                 $cols = $colMap[$element->getName()];
