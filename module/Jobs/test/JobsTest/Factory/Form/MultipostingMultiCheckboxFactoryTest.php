@@ -10,18 +10,20 @@
 /** */
 namespace JobsTest\Factory\Form;
 
+use PHPUnit\Framework\TestCase;
+
 use Jobs\Factory\Form\MultipostingMultiCheckboxFactory;
 
 /**
  * Tests for \Jobs\Factory\Form\MultipostingMultiCheckboxFactory
- * 
+ *
  * @covers \Jobs\Factory\Form\MultipostingMultiCheckboxFactory
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
  * @group Jobs
  * @group Jobs.Factory
  * @group Jobs.Factory.Form
  */
-class MultipostingMultiCheckboxFactoryTest extends \PHPUnit_Framework_TestCase
+class MultipostingMultiCheckboxFactoryTest extends TestCase
 {
     /**
      * @testdox Implements \Zend\ServiceManager\FactoryInterface
@@ -53,16 +55,16 @@ class MultipostingMultiCheckboxFactoryTest extends \PHPUnit_Framework_TestCase
                ->method('setViewPartial')->with('jobs/form/multiposting-checkboxes');
 
         $select->expects($this->once())
-               ->method('setHeadscripts')->with(array('Jobs/js/form.multiposting-checkboxes.js'));
+               ->method('setHeadscripts')->with(array('modules/Jobs/js/form.multiposting-checkboxes.js'));
 
         $factory = $this->getMockBuilder('\Zend\ServiceManager\FactoryInterface')
                         ->setMethods(array('__invoke'))
                         ->getMockForAbstractClass()
         ;
         $factory
-	        ->expects($this->once())
-	        ->method('__invoke')
-	        ->willReturn($select)
+            ->expects($this->once())
+            ->method('__invoke')
+            ->willReturn($select)
         ;
 
 
@@ -71,7 +73,7 @@ class MultipostingMultiCheckboxFactoryTest extends \PHPUnit_Framework_TestCase
         $target = new MultipostingMultiCheckboxFactory();
         $target->setParentFactory($factory);
 
-        $actual = $target($sm,'irrelevant');
+        $actual = $target($sm, 'irrelevant');
 
         $this->assertSame($select, $actual);
     }

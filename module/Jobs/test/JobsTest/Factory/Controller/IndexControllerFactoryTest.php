@@ -9,16 +9,18 @@
 
 namespace JobsTest\Factory\Controller;
 
+use PHPUnit\Framework\TestCase;
+
 use Jobs\Controller\IndexController;
 use Jobs\Factory\Controller\IndexControllerFactory;
-use Test\Bootstrap;
+use CoreTest\Bootstrap;
 use Zend\Mvc\Controller\ControllerManager;
 
 /**
  * Class IndexControllerFactoryTest
  * @package JobsTest\Factory\Controller
  */
-class IndexControllerFactoryTest extends \PHPUnit_Framework_TestCase
+class IndexControllerFactoryTest extends TestCase
 {
     /**
      * @var IndexControllerFactory
@@ -28,7 +30,7 @@ class IndexControllerFactoryTest extends \PHPUnit_Framework_TestCase
     /**
      *
      */
-    public function setUp()
+    protected function setUp(): void
     {
         $this->testedObj = new IndexControllerFactory();
     }
@@ -56,7 +58,7 @@ class IndexControllerFactoryTest extends \PHPUnit_Framework_TestCase
 
         $sm->setService('repositories', $repositoriesMock);
 
-        $result = $this->testedObj->__invoke($sm,IndexController::class);
+        $result = $this->testedObj->__invoke($sm, IndexController::class);
 
         $this->assertInstanceOf('Jobs\Controller\IndexController', $result);
     }

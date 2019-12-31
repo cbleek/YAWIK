@@ -2,14 +2,15 @@
 
 namespace CoreTest\Controller;
 
+use PHPUnit\Framework\TestCase;
+
 use Auth\Entity\AnonymousUser;
 use Auth\Entity\User;
 use AuthTest\Entity\Provider\UserEntityProvider;
-use Test\Bootstrap;
+use CoreTest\Bootstrap;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 use Zend\ServiceManager\ServiceManager;
 use Zend\Test\PHPUnit\Controller\AbstractHttpControllerTestCase;
-
 
 /**
  * Class AbstractFunctionalControllerTestCase
@@ -30,7 +31,7 @@ abstract class AbstractFunctionalControllerTestCase extends AbstractHttpControll
      */
     private $documentManagerMock;
 
-    public function setUp()
+    protected function setUp(): void
     {
         $this->serviceLocator = null;
         $this->setApplicationConfig(
@@ -41,7 +42,7 @@ abstract class AbstractFunctionalControllerTestCase extends AbstractHttpControll
         $this->prepareDocumentManagerMock();
     }
 
-    public static function tearDownAfterClass()
+    public static function tearDownAfterClass(): void
     {
         parent::tearDownAfterClass();
         Bootstrap::setupServiceManager();

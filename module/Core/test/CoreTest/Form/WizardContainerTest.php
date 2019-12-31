@@ -10,19 +10,21 @@
 /** */
 namespace CoreTest\Form;
 
+use PHPUnit\Framework\TestCase;
+
 use Core\Form\Container;
 use CoreTestUtils\TestCase\TestInheritanceTrait;
 use CoreTestUtils\TestCase\TestSetterGetterTrait;
 
 /**
  * Tests for \Core\Form\WizardContainer
- * 
+ *
  * @covers \Core\Form\WizardContainer
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
  * @group Core
  * @group Core.Form
  */
-class WizardContainerTest extends \PHPUnit_Framework_TestCase
+class WizardContainerTest extends TestCase
 {
     use TestInheritanceTrait, TestSetterGetterTrait;
 
@@ -45,10 +47,10 @@ class WizardContainerTest extends \PHPUnit_Framework_TestCase
                      ->setLabel('top');
 
         return [
-            [ 'Headscripts', [
+            /*[ 'Headscripts', [
                 'default' => [ '/assets/twitter-bootstrap-wizard/jquery.bootstrap.wizard.js' ],
                 'value'   => [ 'test/scripts' ],
-            ]],
+            ]],*/
             [ 'Form', [
                 'value' => 'test',
                 'setter_args' => [ $object ],
@@ -134,4 +136,3 @@ class WizardContainerTest extends \PHPUnit_Framework_TestCase
         ];
     }
 }
-

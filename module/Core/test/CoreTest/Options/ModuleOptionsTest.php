@@ -10,6 +10,9 @@
 
 namespace Core\Options;
 
+use PHPUnit\Framework\TestCase;
+
+use Core\Application;
 use Core\Options\ModuleOptions as Options;
 use CoreTestUtils\TestCase\SetupTargetTrait;
 use CoreTestUtils\TestCase\TestSetterGetterTrait;
@@ -19,12 +22,12 @@ use CoreTestUtils\TestCase\TestSetterGetterTrait;
  * @covers \Core\Options\ModuleOptions
  * @author Carsten Bleek <bleek@cross-solution.de>
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
+ * @author Anthonius Munthi <https://itstoni.com>
  * @group Core
  * @group Core.Options
  */
-class ModuleOptionsTest extends \PHPUnit_Framework_TestCase
+class ModuleOptionsTest extends TestCase
 {
-
     use TestSetterGetterTrait, SetupTargetTrait;
 
     /**
@@ -44,7 +47,7 @@ class ModuleOptionsTest extends \PHPUnit_Framework_TestCase
         return [
             ['siteLogo', [
                 'value' => 'some-logo.jpg',
-                'default' => '/Core/images/logo.jpg'
+                'default' => 'modules/Core/images/logo.jpg'
             ]],
             ['siteName', [
                 'value' => 'MyName',
@@ -102,18 +105,16 @@ class ModuleOptionsTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetSiteNameThrowsExceptionIfNotSet()
     {
-        $this->setExpectedException(
-             '\Core\Options\Exception\MissingOptionException',
-             'Missing value for option "siteName"'
-        );
+        $this->expectException('\Core\Options\Exception\MissingOptionException');
+        $this->expectExceptionMessage('Missing value for option "siteName"');
 
         $this->target->setSiteName('');
         $this->target->getSiteName();
     }
 
     /**
-     * @covers Core\Options\ModuleOptions::getSupportedLanguages
-     * @covers Core\Options\ModuleOptions::setSupportedLanguages
+     * @covers \Core\Options\ModuleOptions::getSupportedLanguages
+     * @covers \Core\Options\ModuleOptions::setSupportedLanguages
      */
     public function testSetGetSupportedLanguages()
     {
@@ -128,8 +129,8 @@ class ModuleOptionsTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @covers Core\Options\ModuleOptions::isDetectLanguage
-     * @covers Core\Options\ModuleOptions::setDetectLanguage
+     * @covers \Core\Options\ModuleOptions::isDetectLanguage
+     * @covers \Core\Options\ModuleOptions::setDetectLanguage
      */
     public function testSetGetDetectLanguage()
     {
@@ -151,8 +152,40 @@ class ModuleOptionsTest extends \PHPUnit_Framework_TestCase
      */
     public function testThrowsExceptionIfSystemMessageEmailIsNotSet()
     {
-        $this->setExpectedException('\Core\Options\Exception\MissingOptionException', 'Missing value for option "systemMessageEmail"');
+        $this->expectException('\Core\Options\Exception\MissingOptionException');
+        $this->expectExceptionMessage('Missing value for option "systemMessageEmail"');
 
         $this->target->getSystemMessageEmail();
+    }
+
+    public function testLogDir()
+    {
+        $target = $this->target;
+        $dir1   = getcwd().'/var/log';
+        $dir2   = sys_get_temp_dir().'/yawik/some-log-dir';
+
+        $this->assertEquals($dir1, $target->getLogDir());
+
+        $target->setLogDir($dir2);
+        $this->assertEquals($dir2, $target->getLogDir());
+        $this->assertDirectoryExists($dir2, $target->getLogDir());
+    }
+
+    public function testConfigDir()
+    {
+        $this->assertEquals(Application::getConfigDir(), $this->target->getConfigDir());
+    }
+
+    public function testCacheDir()
+    {
+        $target = $this->target;
+        $dir1   = getcwd().'/var/cache';
+        $dir2   = sys_get_temp_dir().'/yawik/some-cache-dir';
+
+        $this->assertEquals($dir1, $target->getCacheDir());
+
+        $target->setCacheDir($dir2);
+        $this->assertEquals($dir2, $target->getCacheDir());
+        $this->assertDirectoryExists($dir2);
     }
 }

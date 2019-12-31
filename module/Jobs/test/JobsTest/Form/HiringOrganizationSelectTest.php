@@ -10,6 +10,8 @@
 /** */
 namespace JobsTest\Form;
 
+use PHPUnit\Framework\TestCase;
+
 use Jobs\Form\HiringOrganizationSelect;
 
 /**
@@ -20,7 +22,7 @@ use Jobs\Form\HiringOrganizationSelect;
  * @group Jobs
  * @group Jobs.Form
  */
-class HiringOrganizationSelectTest extends \PHPUnit_Framework_TestCase
+class HiringOrganizationSelectTest extends TestCase
 {
     /**
      * The "Class under Test"
@@ -29,17 +31,17 @@ class HiringOrganizationSelectTest extends \PHPUnit_Framework_TestCase
      */
     private $target;
 
-    public function setUp()
+    protected function setUp(): void
     {
         $this->target = new HiringOrganizationSelect();
     }
 
     /**
-     * @testdox Extends \Zend\Form\Element\Select and Implements \Core\Form\ViewPartialProviderInterface
+     * @testdox Extends \Core\Form\Element\Select and Implements \Core\Form\ViewPartialProviderInterface
      */
     public function testExtendsZFSelectAndImplementsViewPartialProviderInterface()
     {
-        $this->assertInstanceOf('\Zend\Form\Element\Select', $this->target);
+        $this->assertInstanceOf('\Core\Form\Element\Select', $this->target);
         $this->assertInstanceOf('\Core\Form\ViewPartialProviderInterface', $this->target);
     }
 

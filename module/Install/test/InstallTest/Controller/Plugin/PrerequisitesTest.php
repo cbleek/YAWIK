@@ -10,21 +10,22 @@
 /** */
 namespace InstallTest\Controller\Plugin;
 
+use PHPUnit\Framework\TestCase;
+
 use Install\Controller\Plugin\Prerequisites;
 use org\bovigo\vfs\vfsStream;
 
 /**
  * Tests for \Install\Controller\Plugin\Prerequisites
- * 
+ *
  * @covers \Install\Controller\Plugin\Prerequisites
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
  * @group Install
  * @group Install.Controller
  * @group Install.Controller.Plugin
  */
-class PrerequisitesTest extends \PHPUnit_Framework_TestCase
+class PrerequisitesTest extends TestCase
 {
-
     public function testExtendsAbstractPlugin()
     {
         $this->assertInstanceOf('\Zend\Mvc\Controller\Plugin\AbstractPlugin', new Prerequisites());
@@ -34,8 +35,8 @@ class PrerequisitesTest extends \PHPUnit_Framework_TestCase
     {
         $expected = array(
             'config/autoload' => 'exists',
-            'cache' => 'writable|creatable',
-            'log' => 'writable|creatable',
+            'var/cache' => 'writable|creatable',
+            'var/log' => 'writable|creatable',
         );
 
         $this->assertAttributeEquals($expected, 'directories', new Prerequisites());
@@ -67,8 +68,8 @@ class PrerequisitesTest extends \PHPUnit_Framework_TestCase
         $expected = array(
             'directories' => array(
                 'config/autoload' => array('valid' => true),
-                'cache' => array('valid' => true),
-                'log' => array('valid' => true),
+                'var/cache' => array('valid' => true),
+                'var/log' => array('valid' => true),
             ),
             'valid' => true,
         );

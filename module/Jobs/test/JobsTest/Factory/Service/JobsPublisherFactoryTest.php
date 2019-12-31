@@ -9,13 +9,15 @@
 
 namespace Jobs\Factory\Service;
 
-use Test\Bootstrap;
+use PHPUnit\Framework\TestCase;
+
+use CoreTest\Bootstrap;
 
 /**
  * Class JobsPublisherFactoryTest
  * @package Jobs\Factory\Service
  */
-class JobsPublisherFactoryTest extends \PHPUnit_Framework_TestCase
+class JobsPublisherFactoryTest extends TestCase
 {
     /**
      * @var JobsPublisherFactory
@@ -27,7 +29,7 @@ class JobsPublisherFactoryTest extends \PHPUnit_Framework_TestCase
     /**
      *
      */
-    public function setUp()
+    protected function setUp(): void
     {
         $this->testedObj = new JobsPublisherFactory();
         $this->mockJobsOptions = $this->getMockBuilder('Jobs\Options\ModuleOptions')

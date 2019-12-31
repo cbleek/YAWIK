@@ -1,3 +1,6 @@
+
+###   Yawik is currently PHP based. We have realized that we can reach our goal faster without PHP. we'll see how it is with nodejs. We concentrate on the input of [job postings](https://cross-solution.de/jobpost), [job search](https://cross-solution.de/jobs), creating a [CV](https://cross-solution.de/cv) and [applying by form](https://cross-solution.de/cv). If you like the idea Open Source for human resources, [support us](https://github.com/sponsors/cbleek)
+
 YAWIK
 =====
 
@@ -11,12 +14,16 @@ connecting recruiters and applicants.
 Current state
 -------------
 
-alpha
+[alpha](https://de.wikipedia.org/wiki/Entwicklungsstadium_(Software)#Alpha-Version)
 
 but
 
-YAWIK is currently used by ~10 small companies for managing ~100 applications 
-a day.
+The following Jobboards are using YAWIK:
+
+* https://www.gastrojob24.ch
+* https://www.stellenmarkt.com
+
+you want to be listet here? Send a PR.
 
 Build status: 
 
@@ -51,8 +58,8 @@ Forum
 https://forum.yawik.org
 
 
-Contribute!
------------
+:muscle: Contribute!
+--------------------
 
 * [Fork and clone](https://help.github.com/articles/fork-a-repo).
 * Run the command `./install.sh``, which downloads composer and runs `php composer.phar install` to install the dependencies. 

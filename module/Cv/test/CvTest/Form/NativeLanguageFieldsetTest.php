@@ -10,6 +10,8 @@
 /** */
 namespace CvTest\Form;
 
+use PHPUnit\Framework\TestCase;
+
 use Core\Entity\Hydrator\EntityHydrator;
 use Core\Form\EmptySummaryAwareInterface;
 use Core\Form\EmptySummaryAwareTrait;
@@ -22,15 +24,14 @@ use Zend\Form\Fieldset;
 
 /**
  * Tests for \Cv\Form\NativeLanguageFieldset
- * 
+ *
  * @covers \Cv\Form\NativeLanguageFieldset
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
  * @group Cv
  * @group Cv.Form
  */
-class NativeLanguageFieldsetTest extends \PHPUnit_Framework_TestCase
+class NativeLanguageFieldsetTest extends TestCase
 {
-
     use TestInheritanceTrait, TestUsesTraitsTrait, TestDefaultAttributesTrait;
 
     public static $languagesOptions = [
@@ -177,7 +178,7 @@ class NativeLanguageFieldsetTest extends \PHPUnit_Framework_TestCase
     {
         $add = [
                     'name'       => 'nativeLanguages',
-                    'type'       => 'Zend\Form\Element\Select',
+                    'type'       => 'Core\Form\Element\Select',
                     'options'    => [
                         'label'         => 'Language',
                         'value_options' => self::$languagesOptions

@@ -13,7 +13,7 @@
 use Applications\Entity\StatusInterface as Status;
 
 $this->headTitle($this->translate('Details'));
-$this->headScript()->appendFile($this->basePath('Applications/js/applications.manage.detail.js'));
+$this->headScript()->appendFile($this->basepath('modules/Applications/js/applications.manage.detail.js'));
 $this->headScript()->appendScript('$(function() { $(".rating").barrating(); });');
 
 /* @var Applications\Entity\Application $application */
@@ -384,7 +384,7 @@ endif;
                         </a>
 
                     <?php endforeach;
-                    $this->headScript()->appendFile($this->basePath('Core/js/core.reloadable-modal.js'))?>
+                    $this->headScript()->appendFile($this->basepath('modules/Core/js/core.reloadable-modal.js'))?>
                     <div class="modal fade modal-scrollable" id="sp-modal" data-reloadable="body" tabindex="-1" role="dialog" aria-hidden="true">
                         <div class="modal-dialog">
                             <div class="modal-content">
@@ -475,7 +475,7 @@ endif;
                     <?php endif;?>
                     <tr>
                         <td><?php echo $this->translate('agent')?>:</td>
-                        <td><?php echo $this->link($job->getUser()->getInfo()->getDisplayName())?></td>
+                        <td><?php echo $this->contactLink($job->getUser()->getInfo())?></td>
                     </tr>
                     <?php
                     if ($job->hasMetaData('organizations:managers')): ?>

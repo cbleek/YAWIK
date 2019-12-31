@@ -1,0 +1,45 @@
+{
+    "type": "yawik-module",
+    "name": "yawik/pdf",
+    "description": "This package provide a PDF module for yawik.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Mathias Gelhausen",
+            "email": "gelhausen@cross-solution.de"
+        },
+        {
+            "name": "Carsten Bleek",
+            "email": "bleek@cross-solution.de"
+        },
+        {
+            "name": "Anthonius Munthi",
+            "email": "me@itstoni.com"
+        }
+    ],
+    "keywords": [
+        "yawik", "module", "zf3"
+    ],
+    "require": {
+        "yawik/core": ">=0.33@dev",
+        "mpdf/mpdf": "5.7.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Pdf\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-0": {
+            "": "test/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-develop": "0.33-dev"
+        },
+        "zf": {
+            "module": "Pdf"
+        }
+    }
+}

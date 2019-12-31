@@ -9,17 +9,19 @@
 
 namespace AuthTest\Factory\Service;
 
-use Auth\Factory\Service\GotoResetPasswordFactory;
-use Test\Bootstrap;
+use PHPUnit\Framework\TestCase;
 
-class GotoResetPasswordFactoryTest extends \PHPUnit_Framework_TestCase
+use Auth\Factory\Service\GotoResetPasswordFactory;
+use CoreTest\Bootstrap;
+
+class GotoResetPasswordFactoryTest extends TestCase
 {
     /**
      * @var GotoResetPasswordFactory
      */
     private $testedObj;
 
-    public function setUp()
+    protected function setUp(): void
     {
         $this->testedObj = new GotoResetPasswordFactory();
     }

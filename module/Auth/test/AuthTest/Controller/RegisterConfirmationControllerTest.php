@@ -9,9 +9,11 @@
 
 namespace AuthTest\Controller;
 
+use PHPUnit\Framework\TestCase;
+
 use Auth\Controller\RegisterConfirmationController;
 use Auth\Service\Exception;
-use Test\Bootstrap;
+use CoreTest\Bootstrap;
 use Core\Controller\Plugin\Notification;
 use CoreTest\Controller\AbstractControllerTestCase;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
@@ -24,7 +26,7 @@ use Zend\Mvc\Controller\PluginManager;
  *
  * @package AuthTest\Controller
  * @runTestsInSeparateProcesses
- * @covers Auth\Controller\RegisterConfirmationController
+ * @covers \Auth\Controller\RegisterConfirmationController
  * @group Auth
  * @group Auth.Controller
  */
@@ -40,7 +42,7 @@ class RegisterConfirmationControllerTest extends AbstractControllerTestCase
      * @runInSeparateProcess
      * @preserveGlobalState disabled
      */
-    public function setUp()
+    protected function setUp(): void
     {
         $this->init('register-confirmation');
 

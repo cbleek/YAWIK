@@ -9,6 +9,8 @@
 
 namespace OrganizationsTest\ImageFileCache;
 
+use PHPUnit\Framework\TestCase;
+
 use Organizations\ImageFileCache\Manager;
 use Organizations\Options\ImageFileCacheOptions as Options;
 use Organizations\Entity\OrganizationImage as ImageEntity;
@@ -19,7 +21,7 @@ use org\bovigo\vfs\vfsStreamDirectory;
 /**
  * @coversDefaultClass \Organizations\ImageFileCache\Manager
  */
-class ManagerTest extends \PHPUnit_Framework_TestCase
+class ManagerTest extends TestCase
 {
 
     /**
@@ -33,9 +35,9 @@ class ManagerTest extends \PHPUnit_Framework_TestCase
     protected $options;
 
     /**
-     * @see \PHPUnit_Framework_TestCase::setUp()
+     * @see \PHPUnit\Framework\TestCase::setUp()
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->options = new Options();
         $this->manager = new Manager($this->options);

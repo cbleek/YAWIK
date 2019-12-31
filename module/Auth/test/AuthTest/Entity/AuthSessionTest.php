@@ -10,7 +10,10 @@
 /** */
 namespace AuthTest\Entity;
 
+use PHPUnit\Framework\TestCase;
+
 use Auth\Entity\AuthSession;
+use Core\Application;
 
 /**
  * Tests for User
@@ -22,7 +25,7 @@ use Auth\Entity\AuthSession;
  * @group  User
  * @group  User.Entity
  */
-class AuthSessionTest extends \PHPUnit_Framework_TestCase
+class AuthSessionTest extends TestCase
 {
     /**
      * The "Class under Test"
@@ -31,7 +34,7 @@ class AuthSessionTest extends \PHPUnit_Framework_TestCase
      */
     private $target;
 
-    public function setup()
+    protected function setUp(): void
     {
         $this->target = new AuthSession();
     }
@@ -47,8 +50,8 @@ class AuthSessionTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @testdox Allows to set the name of the session
-     * @covers Auth\Entity\AuthSession::getName
-     * @covers Auth\Entity\AuthSession::setName
+     * @covers \Auth\Entity\AuthSession::getName
+     * @covers \Auth\Entity\AuthSession::setName
      */
     public function testSetGetName()
     {
@@ -71,8 +74,8 @@ class AuthSessionTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @testdox Allows to set the values of the session
-     * @covers Auth\Entity\AuthSession::getSession
-     * @covers Auth\Entity\AuthSession::setSession
+     * @covers \Auth\Entity\AuthSession::getSession
+     * @covers \Auth\Entity\AuthSession::setSession
      * @dataProvider provideSessionTestData
      */
     public function testSetGetSession($session, $expectedSession)
@@ -86,17 +89,19 @@ class AuthSessionTest extends \PHPUnit_Framework_TestCase
 
     public function provideModificationDateTestData()
     {
+        Application::loadDotEnv();
+        $timezone = new \DateTimeZone(getenv('TIMEZONE'));
         $date = "2015-01-12 12:11:06";
         return [
-            [null,                 new \DateTime()],
-            [new \DateTime($date), new \DateTime($date)],
-            [$date,                new \DateTime($date)],
+            [null,                 new \DateTime('now', $timezone)],
+            [new \DateTime($date), new \DateTime($date, $timezone)],
+            [$date,                new \DateTime($date, $timezone)],
         ];
     }
     /**
      * @testdox Allows to set the role name of a user
-     * @covers Auth\Entity\AuthSession::setModificationDate
-     * @covers Auth\Entity\AuthSession::getModificationDate
+     * @covers \Auth\Entity\AuthSession::setModificationDate
+     * @covers \Auth\Entity\AuthSession::getModificationDate
      * @dataProvider provideModificationDateTestData
      */
     public function testSetGetModificationDate($date, $expectedDate)

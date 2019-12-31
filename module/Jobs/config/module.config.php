@@ -1,8 +1,11 @@
 <?php
 namespace Jobs;
+
 use Jobs\Controller\AdminCategoriesController;
 use Jobs\Controller\AdminController;
 use Jobs\Controller\ConsoleController;
+use Jobs\Controller\Plugin\ProcessJsonRequest;
+use Jobs\Controller\Plugin\ProcessJsonRequestFactory;
 use Jobs\Form\InputFilter\JobLocationEdit;
 use Jobs\Listener\Publisher;
 
@@ -21,7 +24,7 @@ return [
                  * for multiple paths.
                  * example https://github.com/doctrine/DoctrineORMModule
                  */
-                'paths' => [ __DIR__ . '/../src/Jobs/Entity'],
+                'paths' => [ __DIR__ . '/../src/Entity'],
             ],
         ],
         'eventmanager' => [
@@ -30,6 +33,16 @@ return [
                     '\Jobs\Repository\Event\UpdatePermissionsSubscriber',
                 ],
             ],
+        ],
+    ],
+
+    'slm_queue' => [
+
+        'job_manager' => [
+            'factories' => [
+                Queue\FindJobsWithExternalImageJob::class => Queue\FindJobsWithExternalImageJobFactory::class,
+                Queue\FetchExternalImageJob::class => Queue\FetchExternalImageJobFactory::class,
+            ]
         ],
     ],
 
@@ -218,7 +231,7 @@ return [
             'Jobs/Options/Provider'                       => 'Jobs\Factory\Options\ProviderOptionsFactory',
             'Jobs/Options/Channel'                        => 'Jobs\Factory\Options\ChannelOptionsFactory',
             'Jobs\Form\Hydrator\OrganizationNameHydrator' => 'Jobs\Factory\Form\Hydrator\OrganizationNameHydratorFactory',
-            'Jobs/JsonJobsEntityHydrator'                 => 'Jobs\Entity\Hydrator\JsonJobsEntityHydratorFactory',
+            'modules/Jobs/jsonJobsEntityHydrator'                 => 'Jobs\Entity\Hydrator\JsonJobsEntityHydratorFactory',
             'Jobs/RestClient'                             => 'Jobs\Factory\Service\JobsPublisherFactory',
             //'Jobs/Events'                                 => 'Jobs\Factory\JobEventManagerFactory',
             'Jobs/Listener/MailSender'                    => 'Jobs\Factory\Listener\MailSenderFactory',
@@ -278,6 +291,10 @@ return [
                 'lazy' => true
             ],
         ]],
+
+        'Core/EntityEraser/Dependencies/Events' => ['listeners' => [
+            Listener\JobEntityDependencyListener::class => ['*', true]
+        ]],
     ],
 
 
@@ -288,9 +305,9 @@ return [
         ],
         'factories' => [
             'Jobs/Import' => [ Controller\ImportController::class, 'factory'],
-        	'Jobs/Console' => [ConsoleController::class,'factory'],
-	        'Jobs/AdminCategories' => [AdminCategoriesController::class,'factory'],
-	        'Jobs/Admin'      => [AdminController::class,'factory'],
+            'Jobs/Console' => [ConsoleController::class,'factory'],
+            'Jobs/AdminCategories' => [AdminCategoriesController::class,'factory'],
+            'Jobs/Admin'      => [AdminController::class,'factory'],
             'Jobs/Template' => 'Jobs\Factory\Controller\TemplateControllerFactory',
             'Jobs/Index' => 'Jobs\Factory\Controller\IndexControllerFactory',
             'Jobs/Approval' => 'Jobs\Factory\Controller\ApprovalControllerFactory',
@@ -304,6 +321,10 @@ return [
     'controller_plugins' => [
         'factories' => [
             'initializeJob' => 'Jobs\Factory\Controller\Plugin\InitializeJobFactory',
+            ProcessJsonRequest::class => ProcessJsonRequestFactory::class
+        ],
+        'aliases' => [
+            'processJsonRequest' => ProcessJsonRequest::class,
         ],
     ],
 
@@ -330,6 +351,7 @@ return [
             'jobs/form/multiposting-checkboxes' => __DIR__ . '/../view/form/multiposting-checkboxes.phtml',
             'jobs/form/ats-mode.view' => __DIR__ . '/../view/form/ats-mode.view.phtml',
             'jobs/form/ats-mode.form' => __DIR__ . '/../view/form/ats-mode.form.phtml',
+            'jobs/form/salary-fieldset' => __DIR__ . '/../view/form/salary-fieldset.phtml',
             'jobs/form/company-name-fieldset' => __DIR__ . '/../view/form/company-name-fieldset.phtml',
             'jobs/form/preview' => __DIR__ . '/../view/form/preview.phtml',
             'jobs/form/customer-note' => __DIR__ . '/../view/form/customer-note.phtml',
@@ -412,6 +434,8 @@ return [
             'Jobs/MultipostButtonFieldset'      => 'Jobs\Form\MultipostButtonFieldset',
             'Jobs/AtsMode'                      => 'Jobs\Form\AtsMode',
             'Jobs/AtsModeFieldset'              => 'Jobs\Form\AtsModeFieldset',
+            'Jobs/Salary'                       => 'Jobs\Form\Salary',
+            'Jobs/SalaryFieldset'               => 'Jobs\Form\SalaryFieldset',
             'Jobs/AdminSearch'                  => 'Jobs\Form\AdminSearchFormElementsFieldset',
             'Jobs/ListFilter'                   => 'Jobs\Form\ListFilter',
             'Jobs/ListFilterLocation'           => 'Jobs\Form\ListFilterLocation',
@@ -444,15 +468,15 @@ return [
         'invokables' => [
             'Jobs/Location/New'                 => 'Jobs\Form\InputFilter\JobLocationNew',
             //'Jobs/Location/Edit'                => 'Jobs\Form\InputFilter\JobLocationEdit',
-	        JobLocationEdit::class => JobLocationEdit::class,
+            JobLocationEdit::class => JobLocationEdit::class,
             'Jobs/Company'                      => 'Jobs\Form\InputFilter\CompanyName',
         ],
         'factories' => [
             'Jobs/AtsMode'                      => 'Jobs\Factory\Form\InputFilter\AtsModeFactory',
         ],
-	    'aliases' => [
-	    	'Jobs/Location/Edit' => JobLocationEdit::class
-	    ]
+        'aliases' => [
+            'Jobs/Location/Edit' => JobLocationEdit::class
+        ]
     ],
 
     'filters' => [

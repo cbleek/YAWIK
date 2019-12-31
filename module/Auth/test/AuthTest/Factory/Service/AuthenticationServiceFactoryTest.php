@@ -9,22 +9,24 @@
 
 namespace AuthTest\Factory\Service;
 
+use PHPUnit\Framework\TestCase;
+
 use Auth\Factory\Service\AuthenticationServiceFactory;
-use Test\Bootstrap;
+use CoreTest\Bootstrap;
 
 /**
  * Class AuthenticationServiceFactoryTest
  * @package AuthTest\Factory\Service
  * @covers \Auth\Factory\Service\AuthenticationServiceFactory
  */
-class AuthenticationServiceFactoryTest extends \PHPUnit_Framework_TestCase
+class AuthenticationServiceFactoryTest extends TestCase
 {
     /**
      * @var AuthenticationServiceFactory
      */
     private $testedObj;
 
-    public function setUp()
+    protected function setUp(): void
     {
         $this->testedObj = new AuthenticationServiceFactory();
     }

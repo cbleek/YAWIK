@@ -9,12 +9,14 @@
 
 namespace AuthTest\Controller;
 
+use PHPUnit\Framework\TestCase;
+
 use Auth\Controller\RegisterController;
 use Auth\Form\RegisterInputFilter;
 use Auth\Options\CaptchaOptions;
 use Auth\Service\Exception;
 use Auth\Options\ModuleOptions;
-use Test\Bootstrap;
+use CoreTest\Bootstrap;
 use Core\Controller\Plugin\Notification;
 use CoreTest\Controller\AbstractControllerTestCase;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
@@ -41,7 +43,7 @@ class RegisterControllerTest extends AbstractControllerTestCase
      */
     private $paramsMock;
 
-    public function setUp()
+    protected function setUp(): void
     {
         $this->init('register');
 

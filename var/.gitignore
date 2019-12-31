@@ -1,0 +1,7 @@
+log/*
+!log/.gitkeep
+
+cache/*
+!cache/.gitkeep
+
+mongodb

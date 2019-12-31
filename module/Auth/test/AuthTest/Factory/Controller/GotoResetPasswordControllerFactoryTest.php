@@ -9,18 +9,20 @@
 
 namespace AuthTest\Factory\Controller;
 
+use PHPUnit\Framework\TestCase;
+
 use Auth\Factory\Controller\GotoResetPasswordControllerFactory;
-use Test\Bootstrap;
+use CoreTest\Bootstrap;
 use Zend\Mvc\Controller\ControllerManager;
 
-class GotoResetPasswordControllerFactoryTest extends \PHPUnit_Framework_TestCase
+class GotoResetPasswordControllerFactoryTest extends TestCase
 {
     /**
      * @var GotoResetPasswordControllerFactory
      */
     private $testedObj;
 
-    public function setUp()
+    protected function setUp(): void
     {
         $this->testedObj = new GotoResetPasswordControllerFactory();
     }
@@ -41,7 +43,7 @@ class GotoResetPasswordControllerFactoryTest extends \PHPUnit_Framework_TestCase
         $sm->setService('Core/Log', $loggerMock);
 
         $controllerManager = new ControllerManager($sm);
-        $sm->setService('ControllerManager',$controllerManager);
+        $sm->setService('ControllerManager', $controllerManager);
 
         $result = $this->testedObj->createService($sm);
 

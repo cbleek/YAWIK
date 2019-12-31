@@ -8,11 +8,13 @@
 
 namespace CoreTestUtils\TestCase;
 
+use PHPUnit\Framework\TestCase;
+
 use Auth\Entity\AnonymousUser;
 use Auth\Entity\Info;
 use Auth\Entity\User;
 use Doctrine\ODM\MongoDB\DocumentManager;
-use Test\Bootstrap;
+use CoreTest\Bootstrap;
 use Zend\ServiceManager\ServiceManager;
 use Zend\Test\PHPUnit\Controller\AbstractHttpControllerTestCase;
 
@@ -35,7 +37,7 @@ class FunctionalTestCase extends AbstractHttpControllerTestCase
      */
     protected $serviceLocator;
 
-    public function setUp()
+    protected function setUp(): void
     {
         $this->serviceLocator = null;
         $this->setApplicationConfig(

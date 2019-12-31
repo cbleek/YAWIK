@@ -9,17 +9,19 @@
 
 namespace AuthTest\Factory\Form;
 
-use Auth\Factory\Form\ForgotPasswordFactory;
-use Test\Bootstrap;
+use PHPUnit\Framework\TestCase;
 
-class ForgotPasswordFactoryTest extends \PHPUnit_Framework_TestCase
+use Auth\Factory\Form\ForgotPasswordFactory;
+use CoreTest\Bootstrap;
+
+class ForgotPasswordFactoryTest extends TestCase
 {
     /**
      * @var ForgotPasswordFactory
      */
     private $testedObj;
 
-    public function setUp()
+    protected function setUp(): void
     {
         $this->testedObj = new ForgotPasswordFactory();
     }

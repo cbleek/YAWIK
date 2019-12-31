@@ -10,18 +10,20 @@
 /** */
 namespace OrganizationsTest\Form\Element;
 
+use PHPUnit\Framework\TestCase;
+
 use Organizations\Form\Element\InviteEmployeeBar;
 
 /**
  * Tests for Organizations\Form\Element\InviteEmployeeBar
- * 
+ *
  * @covers \Organizations\Form\Element\InviteEmployeeBar
  * @author Mathias Gelhausen <gelhausen@cross-solution.de>
  * @group Organizations
  * @group Organizations.Form
  * @group Organizations.Form.Element
  */
-class InviteEmployeeBarTest extends \PHPUnit_Framework_TestCase
+class InviteEmployeeBarTest extends TestCase
 {
 
     /**
@@ -43,7 +45,7 @@ class InviteEmployeeBarTest extends \PHPUnit_Framework_TestCase
     {
         $target = new InviteEmployeeBar();
 
-        $this->assertAttributeEquals(array('Organizations/js/form.invite-employee.js'), 'headscripts', $target);
+        $this->assertAttributeEquals(array('modules/Organizations/js/form.invite-employee.js'), 'headscripts', $target);
         $this->assertAttributeEquals('organizations/form/invite-employee-bar', 'partial', $target);
     }
 

@@ -9,18 +9,20 @@
 
 namespace AuthTest\Factory\Controller;
 
+use PHPUnit\Framework\TestCase;
+
 use Auth\Factory\Controller\RegisterConfirmationControllerFactory;
-use Test\Bootstrap;
+use CoreTest\Bootstrap;
 use Zend\Mvc\Controller\ControllerManager;
 
-class RegisterConfirmationControllerSLFactoryTest extends \PHPUnit_Framework_TestCase
+class RegisterConfirmationControllerSLFactoryTest extends TestCase
 {
     /**
      * @var RegisterConfirmationControllerFactory
      */
     private $testedObj;
 
-    public function setUp()
+    protected function setUp(): void
     {
         $this->testedObj = new RegisterConfirmationControllerFactory();
     }

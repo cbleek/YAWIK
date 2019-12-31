@@ -9,10 +9,12 @@
 
 namespace AuthTest\Controller;
 
+use PHPUnit\Framework\TestCase;
+
 use Auth\Controller\ForgotPasswordController;
 use Auth\Form\ForgotPasswordInputFilter;
 use Auth\Service\Exception;
-use Test\Bootstrap;
+use CoreTest\Bootstrap;
 use CoreTest\Controller\AbstractControllerTestCase;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 use Zend\Mvc\MvcEvent;
@@ -37,7 +39,7 @@ class ForgotPasswordControllerTest extends AbstractControllerTestCase
      */
     private $serviceManager;
 
-    public function setUp()
+    protected function setUp(): void
     {
         $this->init('forgot-password');
 
@@ -96,7 +98,7 @@ class ForgotPasswordControllerTest extends AbstractControllerTestCase
 
         $mvcEvent = new MvcEvent();
         //$notifications = $this->serviceManager->get('coreListenerNotification');
-	    $notifications = $this->serviceManager->get('Core/Listener/Notification');
+        $notifications = $this->serviceManager->get('Core/Listener/Notification');
         $notifications->reset()->renderHTML($mvcEvent);
 
         $expected = array(
@@ -129,7 +131,7 @@ class ForgotPasswordControllerTest extends AbstractControllerTestCase
         $this->formMock->expects($this->once())
             ->method('isValid')
             ->willReturn(true);
-	    
+        
         $this->formMock->expects($this->once())
             ->method('getInputFilter')
             ->willReturn(new ForgotPasswordInputFilter());
@@ -145,7 +147,8 @@ class ForgotPasswordControllerTest extends AbstractControllerTestCase
         );
 
         $this->assertResponseStatusCode(Response::STATUS_CODE_200);
-        $this->assertSame($expected, $result);;
+        $this->assertSame($expected, $result);
+        ;
     }
 
     public function testIndexAction_WithPostRequest_WhenUserDoesNotHaveAnEmail()

@@ -8,6 +8,8 @@
 
 namespace CvTest\Repository;
 
+use PHPUnit\Framework\TestCase;
+
 use Auth\Entity\User;
 use CoreTestUtils\TestCase\FunctionalTestCase;
 use Cv\Entity\Cv;
@@ -16,22 +18,22 @@ use Zend\ServiceManager\ServiceManager;
 /**
  * Class CvTest
  * @package CvTest
- * @covers Cv\Repository\Cv
+ * @covers \Cv\Repository\Cv
  */
 class CvTest extends FunctionalTestCase
 {
     /**
      * @var ServiceManager
      */
-    static protected $sm;
+    protected static $sm;
 
     /**
      * Current authenticated user
      * @var User
      */
-    static protected $user;
+    protected static $user;
 
-    public function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -46,7 +48,7 @@ class CvTest extends FunctionalTestCase
         }
     }
 
-    public function tearDown()
+    protected function tearDown(): void
     {
         parent::tearDown();
         $this->removeCvData();

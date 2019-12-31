@@ -9,18 +9,20 @@
 
 namespace AuthTest\Form;
 
+use PHPUnit\Framework\TestCase;
+
 use Auth\Form\UserStatusFieldset;
 use Zend\Form\Fieldset;
 use Core\Form\ViewPartialProviderInterface;
 
-class UserStatusFieldsetTest extends \PHPUnit_Framework_TestCase
+class UserStatusFieldsetTest extends TestCase
 {
     /**
      * @var UserStatusFieldset
      */
     private $fieldset;
 
-    public function setUp()
+    protected function setUp(): void
     {
         $this->fieldset = new UserStatusFieldset();
     }
@@ -40,8 +42,8 @@ class UserStatusFieldsetTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($this->fieldset->has('status'));
         
         $status = $this->fieldset->get('status');
-        $this->assertInstanceOf(\Zend\Form\Element\Select::class, $status);
-		$this->assertSame([], $status->getValueOptions());
+        $this->assertInstanceOf(\Core\Form\Element\Select::class, $status);
+        $this->assertSame([], $status->getValueOptions());
     }
     
     /**

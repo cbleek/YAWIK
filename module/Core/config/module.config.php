@@ -13,11 +13,15 @@
  */
 namespace Core;
 
+use Core\Controller\Console\AssetsInstallController;
+use Core\Controller\Console\ClearCacheController;
 use Core\Factory\Controller\AdminControllerFactory;
 use Core\Factory\Controller\FileControllerFactory;
 use Core\Factory\Controller\LazyControllerFactory;
+use Core\Factory\Service\HtmlPurifierFactory;
+use Core\Service\ClearCacheService;
+use Core\Service\Tracy;
 use Zend\I18n\Translator\Resources;
-use Zend\ServiceManager\Factory\InvokableFactory;
 
 $doctrineConfig = include __DIR__ . '/doctrine.config.php';
 
@@ -26,10 +30,42 @@ return array(
 
     'doctrine' => $doctrineConfig,
 
+    'slm_queue' => [
+        'worker_strategies' => [
+            'default' => [
+                Queue\Strategy\IdleSleepStrategy::class => ['duration' => 1],
+                Queue\Strategy\JobResultStrategy::class,
+            ],
+            'queues' => [
+                'default' => [
+                    Queue\Strategy\LogStrategy::class => ['log' => 'Log/Core/Queue'],
+                ],
+            ],
+        ],
+        'strategy_manager' => [
+            'factories' => [
+                Queue\Strategy\LogStrategy::class => Queue\Strategy\LogStrategyFactory::class,
+            ],
+        ],
+        'queue_manager' => [
+            'factories' => [
+                'default' => Queue\MongoQueueFactory::class,
+            ],
+        ],
+        'job_manager' => [
+            'aliases' => [
+                'lazy' => Queue\LazyJob::class,
+            ],
+            'factories' => [
+                Queue\LazyJob::class => Queue\LazyJobFactory::class,
+            ]
+        ]
+    ],
+
     'options' => [
         'Core/MailServiceOptions' => [ 'class' => '\Core\Options\MailServiceOptions' ],
-        ],
-    
+    ],
+
     'Core' => array(
         'settings' => array(
             'entity' => '\\Core\\Entity\\SettingsContainer',
@@ -37,7 +73,6 @@ return array(
             'navigation_class' => 'yk-icon yk-icon-settings'
         ),
     ),
-
 
     // Logging
     'log' => array(
@@ -47,7 +82,7 @@ return array(
                      'name' => 'stream',
                     'priority' => 1000,
                     'options' => array(
-                         'stream' => __DIR__ .'/../../../log/yawik.log',
+                         'stream' => getcwd().'/var/log/yawik.log',
                     ),
                  ),
             ),
@@ -58,9 +93,31 @@ return array(
                      'name' => 'stream',
                     'priority' => 1000,
                     'options' => array(
-                         'stream' => __DIR__ .'/../../../log/mails.log',
+                         'stream' => getcwd().'/var/log/mails.log',
                     ),
+
                  ),
+            ),
+        ),
+        'Log/Core/Queue' => array(
+            'writers' => array(
+                array(
+                    'name' => 'stream',
+                    'priority' => 1000,
+                    'options' => array(
+                        'stream' => getcwd().'/var/log/queue.log',
+                        'formatter'  => [
+                            'name' => 'simple',
+                            'options' => [
+                                'format' => '%timestamp% (%pid%) %priorityName%: %message% %extra%',
+                                'dateTimeFormat' => 'd.m.Y H:i:s',
+                            ],
+                        ],
+                    ),
+                ),
+            ),
+            'processors' => array(
+                array('name' => Log\Processor\ProcessId::class),
             ),
         ),
     ),
@@ -69,13 +126,16 @@ return array(
         'invokables' => [
             'Core/UniqueId' => 'Core\Log\Processor\UniqueId',
         ],
+        'factories' => [
+            Log\Processor\ProcessId::class => \Zend\ServiceManager\Factory\InvokableFactory::class,
+        ],
     ],
-    
+
     'tracy' => [
         'mode' => true, // true = production|false = development|null = autodetect|IP address(es) csv/array
         'bar' => false, // bool = enabled|Toggle nette diagnostics bar.
         'strict' => true, // bool = cause immediate death|int = matched against error severity
-        'log' => __DIR__ . '/../../../log/tracy', // path to log directory (this directory keeps error.log, snoozing mailsent file & html exception trace files)
+        'log' => getcwd().'/var/log/tracy', // path to log directory (this directory keeps error.log, snoozing mailsent file & html exception trace files)
         'email' => null, // in production mode notifies the recipient
         'email_snooze' => 900 // interval for sending email in seconds
     ],
@@ -83,6 +143,17 @@ return array(
     // Routes
     'router' => array(
         'routes' => array(
+            'file' => array(
+                'type' => 'Segment',
+                'options' => array(
+                    'route' => '/file/:filestore/:fileId[/:fileName]',
+                    'defaults' => array(
+                        'controller' => 'Core/File',
+                        'action' => 'index'
+                    ),
+                ),
+                'may_terminate' => true,
+            ),
             'lang' => array(
                 'type' => 'Segment',
                 'options' => array(
@@ -152,17 +223,6 @@ return array(
                     ]
                 ),
             ),
-            'file' => array(
-                'type' => 'Segment',
-                'options' => array(
-                    'route' => '/file/:filestore/:fileId[/:fileName]',
-                    'defaults' => array(
-                        'controller' => 'Core/File',
-                        'action' => 'index'
-                    ),
-                ),
-                'may_terminate' => true,
-            ),
         ),
     ),
 
@@ -187,10 +247,46 @@ return array(
                         ],
                     ],
                 ],
+                'assets-install' => [
+                    'options' => [
+                        'route' => 'assets-install [--symlink] [--relative] [--copy]',
+                        'defaults' => [
+                            'controller' => AssetsInstallController::class,
+                            'action' => 'index'
+                        ]
+                    ]
+                ],
+                'clear-cache' => [
+                    'options' => [
+                        'route' => 'clear-cache',
+                        'defaults' => [
+                            'controller' => ClearCacheController::class,
+                            'action' => 'index',
+                        ]
+                    ]
+                ],
+                'mongo-queue-list' => [
+                    'options' => [
+                        'route' => 'queue mongo --list <queue> [--limit=]',
+                        'defaults' => [
+                            'controller' => Queue\Controller\MongoQueueListController::class,
+                            'action' => 'list',
+                        ],
+                    ],
+                ],
+                'mongo-queue' => [
+                    'options' => [
+                        'route' => 'queue mongo <queue>',
+                        'defaults' => [
+                            'controller' => Queue\Controller\MongoQueueController::class,
+                            'action' => 'process',
+                        ]
+                    ]
+                ]
             ],
         ],
     ],
-    
+
     'acl' => array(
         'rules' => array(
             'guest' => array(
@@ -225,7 +321,7 @@ return array(
             ],
         ),
     ),
-    
+
     // Setup the service manager
     'service_manager' => array(
         'invokables' => array(
@@ -242,7 +338,7 @@ return array(
             'Core/PaginatorService' => '\Core\Paginator\PaginatorServiceFactory',
             'Core/Html2Pdf' => '\Core\Html2Pdf\PdfServiceFactory',
             'Core/Navigation' => 'Core\Factory\Navigation\DefaultNavigationFactory',
-            'Core/JsonEntityHydrator' => 'Core\Entity\Hydrator\JsonEntityHydratorFactory',
+            'modules/Core/jsonEntityHydrator' => 'Core\Entity\Hydrator\JsonEntityHydratorFactory',
             'Core/EntityHydrator' => 'Core\Entity\Hydrator\EntityHydratorFactory',
             'Core/Options' => 'Core\Factory\ModuleOptionsFactory',
             'Core/DoctrineMongoODM/RepositoryEvents' => [\Core\Repository\DoctrineMongoODM\Event\RepositoryEventsSubscriber::class,'factory'],
@@ -255,7 +351,12 @@ return array(
             \Core\Listener\DeleteImageSetListener::class => \Core\Factory\Listener\DeleteImageSetListenerFactory::class,
             'Imagine' => \Core\Factory\Service\ImagineFactory::class,
             'Core/Listener/Notification' => [\Core\Listener\NotificationListener::class,'factory'],
+            'Tracy' => [Tracy::class,'factory'],
             Service\EntityEraser\DefaultEntityLoaderListener::class => Service\EntityEraser\DefaultEntityLoaderListenerFactory::class,
+            ClearCacheService::class => [ClearCacheService::class,'factory'],
+            Listener\ModuleVersionAdminWidgetProvider::class => Listener\ModuleVersionAdminWidgetProviderFactory::class,
+            Queue\Worker\MongoWorker::class => \SlmQueue\Factory\WorkerFactory::class,
+            'Core/HtmlPurifier' => \Core\Factory\Service\HtmlPurifierFactory::class
         ),
         'abstract_factories' => array(
             'Core\Factory\OptionsAbstractFactory',
@@ -317,13 +418,18 @@ return array(
     ),
     // Configuration of the controller service manager (Which loads controllers)
     'controllers' => array(
-	    'factories' => [
-		    'Core/Index'   => LazyControllerFactory::class,
+        'factories' => [
+            'Core/Index'   => LazyControllerFactory::class,
             'Core/Admin'   => AdminControllerFactory::class,
-		    'Core/File'    => FileControllerFactory::class,
+            'Core/File'    => FileControllerFactory::class,
             'Core/Content' => LazyControllerFactory::class,
             Controller\Console\PurgeController::class => Controller\Console\PurgeControllerFactory::class,
-	    ],
+            AssetsInstallController::class => [AssetsInstallController::class,'factory'],
+            ClearCacheController::class => [ClearCacheController::class,'factory'],
+            Queue\Controller\MongoQueueController::class => Queue\Controller\MongoQueueControllerFactory::class,
+            Queue\Controller\MongoQueueListController::class => Queue\Controller\MongoQueueListControllerFactory::class,
+
+        ],
     ),
     // Configuration of the controller plugin service manager
     'controller_plugins' => array(
@@ -354,7 +460,7 @@ return array(
             'paginatorservice' => 'Core/PaginatorService',
             'paginationParams' => 'Core/PaginationParams',
             'searchform'       => 'Core/SearchForm',
-	        'notification'     => 'Notification',
+            'notification'     => 'Notification',
         )
     ),
     // Configure the view service manager
@@ -415,11 +521,11 @@ return array(
             'formFileUpload' => 'Core\Form\View\Helper\FormFileUpload',
             'formImageUpload' => 'Core\Form\View\Helper\FormImageUpload',
             'formimageupload' => 'Core\Form\View\Helper\FormImageUpload',
-            
+
             /* @TODO: [ZF3] make this setting to be camel cased */
             'formCheckBox' => 'Core\Form\View\Helper\FormCheckbox',
             'formcheckbox' => 'Core\Form\View\Helper\FormCheckbox',
-            
+
             'formDatePicker' => 'Core\Form\View\Helper\FormDatePicker',
             'formInfoCheckBox' => 'Core\Form\View\Helper\FormInfoCheckbox',
             'formSelect' => 'Core\Form\View\Helper\FormSelect',
@@ -427,6 +533,7 @@ return array(
             'salutation' => 'Core\View\Helper\Salutation',
             'period' => 'Core\View\Helper\Period',
             'link'   => 'Core\View\Helper\Link',
+            'contactLink'   => 'Core\View\Helper\ContactLink',
             'languageSwitcher' => 'Core\View\Helper\LanguageSwitcher',
             'rating' => 'Core\View\Helper\Rating',
             'base64' => 'Core\View\Helper\Base64',
@@ -446,18 +553,20 @@ return array(
             'InsertFile' => [View\Helper\InsertFile::class, 'factory'],
             \Core\View\Helper\Snippet::class => \Core\Factory\View\Helper\SnippetFactory::class,
             \Core\View\Helper\Proxy::class => \Zend\ServiceManager\Factory\InvokableFactory::class,
+            \Core\View\Helper\ModuleVersion::class => \Core\View\Helper\ModuleVersionFactory::class,
         ),
         'initializers' => array(
 //            '\Core\View\Helper\Service\HeadScriptInitializer',
         ),
         'aliases' => [
             'snippet' => \Core\View\Helper\Snippet::class,
-	        'ajaxUrl' => \Core\View\Helper\AjaxUrl::class,
+            'ajaxUrl' => \Core\View\Helper\AjaxUrl::class,
             'proxy' => \Core\View\Helper\Proxy::class,
             'form_element' => 'formElement',
+            'moduleVersion' => \Core\View\Helper\ModuleVersion::class,
         ],
     ),
-    
+
     'view_helper_config' => array(
         'flashmessenger' => array(
             'message_open_format'      => '<div%s><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button><ul><li>',
@@ -471,7 +580,7 @@ return array(
                 ]
         ]
     ),
-    
+
     'filters' => array(
         'invokables' => array(
             'Core/Repository/PropertyToKeywords' => 'Core\Repository\Filter\PropertyToKeywords',
@@ -495,7 +604,7 @@ return array(
             ],
         ],
     ],
-    
+
     'form_elements' => array(
         'invokables' => array(
             'DefaultButtonsFieldset' => '\Core\Form\DefaultButtonsFieldset',
@@ -503,6 +612,7 @@ return array(
             'SummaryFormButtonsFieldset' => 'Core\Form\SummaryFormButtonsFieldset',
             'Checkbox' => 'Core\Form\Element\Checkbox',
             'infoCheckBox' => 'Core\Form\Element\InfoCheckbox',
+            'Core/Select' => 'Core\Form\Element\Select',
             'Core/ListFilterButtons' => '\Core\Form\ListFilterButtonsFieldset',
             'Core/Datepicker' => 'Core\Form\Element\DatePicker',
             'Core/FileUpload' => '\Core\Form\Element\FileUpload',
@@ -540,7 +650,7 @@ return array(
             '\Core\Factory\Paginator\RepositoryAbstractFactory',
         ],
     ],
-    
+
     'mails_config' => array(
         'from' => array(
             'email' => 'no-reply@host.tld',
@@ -552,6 +662,9 @@ return array(
         'Core/AdminController/Events' => [
             'service' => 'Core/EventManager',
             'event' => '\Core\Controller\AdminControllerEvent',
+            'listeners' => [
+                Listener\ModuleVersionAdminWidgetProvider::class => Controller\AdminControllerEvent::EVENT_DASHBOARD,
+            ],
         ],
 
         'Core/CreatePaginator/Events' => [
@@ -564,17 +677,17 @@ return array(
         ],
 
         'Core/Ajax/Events' => [
-	        'service' => 'Core/EventManager',
-	        'event'   => \Core\Listener\Events\AjaxEvent::class,
+            'service' => 'Core/EventManager',
+            'event'   => \Core\Listener\Events\AjaxEvent::class,
         ],
-	    
-	    'Core/File/Events' => [
-		    'service' => 'Core/EventManager',
-		    'event' => \Core\Listener\Events\FileEvent::class,
+
+        'Core/File/Events' => [
+            'service' => 'Core/EventManager',
+            'event' => \Core\Listener\Events\FileEvent::class,
             'listeners' => [
                 \Core\Listener\DeleteImageSetListener::class => [\Core\Listener\Events\FileEvent::EVENT_DELETE, -1000],
             ],
-	    ],
+        ],
 
         'Core/EntityEraser/Dependencies/Events' => [
             'service' => Service\EntityEraser\EntityEraserEvents::class,
@@ -587,7 +700,7 @@ return array(
             'listeners' => [
                 Service\EntityEraser\DefaultEntityLoaderListener::class => ['*', -1000],
             ],
-        ]
+        ],
     ],
-    
+
 );

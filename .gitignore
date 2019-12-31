@@ -1,4 +1,9 @@
-module/Organizations/test
+/.env
+/behat.yml
+/.env.test
+/package-lock.json
+/composer.lock
+
 #
 # General text editors backup files
 #
@@ -31,7 +36,7 @@ build.properties
 #
 tmp
 docs
-log
+./log
 
 #
 # Exclude directories
@@ -39,7 +44,7 @@ log
 build
 components
 vendor
-cache
+./cache
 node_modules
  
 #

@@ -9,26 +9,28 @@
 
 namespace AuthTest\Factory\Form;
 
+use PHPUnit\Framework\TestCase;
+
 use Auth\Factory\Form\UserStatusFieldsetFactory;
 use Auth\Form\UserStatusFieldset;
-use Test\Bootstrap;
+use CoreTest\Bootstrap;
 
-class UserStatusFieldsetFactoryTest extends \PHPUnit_Framework_TestCase
+class UserStatusFieldsetFactoryTest extends TestCase
 {
     /**
      * @var UserStatusFieldsetFactory
      */
     private $factory;
 
-    public function setUp()
+    protected function setUp(): void
     {
         $this->factory = new UserStatusFieldsetFactory();
     }
 
     public function testInvoke()
     {
-		$sm = clone Bootstrap::getServiceManager();
-		$result = $this->factory->__invoke($sm,UserStatusFieldset::class);
-		$this->assertInstanceOf(UserStatusFieldset::class, $result);
+        $sm = clone Bootstrap::getServiceManager();
+        $result = $this->factory->__invoke($sm, UserStatusFieldset::class);
+        $this->assertInstanceOf(UserStatusFieldset::class, $result);
     }
 }
